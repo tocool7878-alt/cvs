@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>庫房進銷存系統</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<!-- ============================================================
+  設定區：請填入你的 Supabase 資訊
+  取得方式：Supabase 後台 > Settings > API
+============================================================ -->
+<script>
+  const SUPABASE_URL = 'https://cniiarfcknjijkxjukag.supabase.co';   // ← 改這裡
+  const SUPABASE_KEY = 'sb_publishable_8VypF8SQC5lqGDaTXuDGxQ_CgRCEtp7';              // ← 改這裡
+</script>
+
+<style>
+  :root {
+    --bg: #0f1117; --surface: #181c27; --surface2: #1e2436;
+    --border: #2a3050; --border2: #374166;
+    --accent: #4f8ef7; --accent2: #6fd4a0; --danger: #f7634f; --warn: #f7c44f;
+    --text: #e8ecf5; --text2: #8a95b5; --text3: #4a5578;
+    --mono: 'IBM Plex Mono', monospace; --sans: 'Noto Sans TC', sans-serif;
+    --radius: 10px; --shadow: 0 4px 24px rgba(0,0,0,0.5);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; }
+  #app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+  .topnav { display: flex; align-items: center; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 20px; height: 54px; flex-shrink: 0; user-select: none; }
+  .topnav-brand { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: .04em; margin-right: 28px; white-space: nowrap; }
+  .nav-tabs { display: flex; gap: 2px; flex: 1; overflow-x: auto; }
+  .nav-tab { padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 13.5px; font-weight: 500; color: var(--text2); transition: all .18s; white-space: nowrap; border: none; background: none; font-family: var(--sans); }
+  .nav-tab:hover { color: var(--text); background: var(--surface2); }
+  .nav-tab.active { color: var(--accent); background: rgba(79,142,247,.12); }
+  .main { flex: 1; overflow-y: auto; padding: 20px 20px 40px; }
+  .page { display: none; } .page.active { display: block; }
+  .section-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .section-title { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--text2); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius); border: none; cursor: pointer; font-family: var(--sans); font-size: 14px; font-weight: 500; transition: all .18s; white-space: nowrap; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #6ba5ff; }
+  .btn-success { background: rgba(111,212,160,.15); color: var(--accent2); border: 1px solid rgba(111,212,160,.3); }
+  .btn-success:hover { background: rgba(111,212,160,.25); }
+  .btn-danger { background: rgba(247,99,79,.12); color: var(--danger); border: 1px solid rgba(247,99,79,.25); }
+  .btn-danger:hover { background: rgba(247,99,79,.22); }
+  .btn-ghost { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--border2); }
+  .btn-sm { padding: 5px 10px; font-size: 13px; }
+  .tbl-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead tr { background: var(--surface2); }
+  th { padding: 10px 14px; text-align: left; font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,.025); }
+  .mono { font-family: var(--mono); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-family: var(--mono); font-size: 11.5px; font-weight: 600; }
+  .badge-in { background: rgba(111,212,160,.15); color: var(--accent2); }
+  .badge-out { background: rgba(247,99,79,.12); color: var(--danger); }
+  .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+  .kpi-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; display: flex; flex-direction: column; gap: 4px; }
+  .kpi-label { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; color: var(--text3); text-transform: uppercase; }
+  .kpi-val { font-family: var(--mono); font-size: 26px; font-weight: 600; line-height: 1.1; }
+  .kpi-val.in { color: var(--accent2); } .kpi-val.out { color: var(--danger); } .kpi-val.count { color: var(--accent); }
+  .filter-bar { display: flex; gap: 10px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; margin-bottom: 16px; align-items: flex-end; }
+  .filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 100px; }
+  .filter-label { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: .08em; text-transform: uppercase; }
+  select, input[type=text], input[type=number], textarea { background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-family: var(--sans); font-size: 14px; padding: 9px 12px; outline: none; transition: border .15s; width: 100%; }
+  select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a95b5' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px; }
+  select:focus, input:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 70px; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(4px); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 14px; padding: 24px; width: 100%; max-width: 480px; box-shadow: var(--shadow); animation: modalIn .22s ease; }
+  @keyframes modalIn { from { transform: scale(.96) translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .modal-title { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: .06em; margin-bottom: 18px; }
+  .form-row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+  .form-label { font-size: 13px; color: var(--text2); font-weight: 500; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px; padding: 12px 22px; font-size: 14px; color: var(--text); z-index: 2000; transition: transform .3s ease; white-space: nowrap; box-shadow: var(--shadow); }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.ok { border-color: rgba(111,212,160,.5); color: var(--accent2); }
+  .toast.err { border-color: rgba(247,99,79,.5); color: var(--danger); }
+  .inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .inv-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; transition: border-color .15s; }
+  .inv-card:hover { border-color: var(--border2); }
+  .inv-card.low { border-color: rgba(247,196,79,.4); }
+  .inv-spec { font-size: 13.5px; font-weight: 700; line-height: 1.3; }
+  .inv-id { font-family: var(--mono); font-size: 10px; color: var(--text3); }
+  .inv-stats { display: flex; gap: 10px; margin-top: 4px; }
+  .inv-stat { flex: 1; }
+  .inv-stat-label { font-family: var(--mono); font-size: 9.5px; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; }
+  .inv-stat-val { font-family: var(--mono); font-size: 18px; font-weight: 600; }
+  .inv-stat-val.stock { color: var(--accent); } .inv-stat-val.in { color: var(--accent2); } .inv-stat-val.out { color: var(--danger); }
+  .empty { text-align: center; padding: 48px 20px; color: var(--text3); font-family: var(--mono); font-size: 13px; }
+  .page-tabs { display: flex; gap: 2px; margin-bottom: 18px; border-bottom: 1px solid var(--border); }
+  .page-tab { padding: 8px 18px; font-size: 14px; font-weight: 500; color: var(--text2); border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; font-family: var(--sans); transition: all .15s; }
+  .page-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .page-tab:hover:not(.active) { color: var(--text); }
+  .loading-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: var(--accent); z-index: 9999; transition: opacity .3s; animation: loadpulse 1s ease-in-out infinite; }
+  @keyframes loadpulse { 0%,100%{opacity:.6} 50%{opacity:1} }
+  .text-muted { color: var(--text3); font-size: 13px; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  @media (max-width: 600px) { .kpi-row { grid-template-columns: 1fr 1fr; } .kpi-row .kpi-card:first-child { grid-column: 1/-1; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <nav class="topnav">
+    <div class="topnav-brand">▸ WH·SYS</div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="goPage('inventory')">庫存總表</button>
+      <button class="nav-tab" onclick="goPage('inbound')">進料作業</button>
+      <button class="nav-tab" onclick="goPage('outbound')">領料作業</button>
+      <button class="nav-tab" onclick="goPage('dashboard')">統計分析</button>
+      <button class="nav-tab" onclick="goPage('settings')">系統設定</button>
+    </div>
+  </nav>
+  <div class="main">
+
+    <!-- 庫存總表 -->
+    <div class="page active" id="page-inventory">
+      <div class="section-hd">
+        <span class="section-title">庫存總表</span>
+        <span class="text-muted">唯讀，不可直接編輯</span>
+      </div>
+      <div class="inv-grid" id="inv-grid"><div class="empty">載入中...</div></div>
+    </div>
+
+    <!-- 進料作業 -->
+    <div class="page" id="page-inbound">
+      <div class="section-hd">
+        <span class="section-title">進料作業</span>
+        <button class="btn btn-success" onclick="openModal('modal-inbound')">＋ 新增進料</button>
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>異動編號</th><th>進料時間</th><th>線材規格</th><th>數量</th><th>經手人</th><th>備註</th><th>操作</th></tr></thead>
+        <tbody id="tbl-inbound"><tr><td colspan="7" class="empty">載入中...</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- 領料作業 -->
+    <div class="page" id="page-outbound">
+      <div class="section-hd">
+        <span class="section-title">領料作業</span>
+        <button class="btn btn-danger" onclick="openModal('modal-outbound')">－ 新增領料</button>
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>異動編號</th><th>領料時間</th><th>線材規格</th><th>數量</th><th>領料人</th><th>用途</th><th>備註</th><th>操作</th></tr></thead>
+        <tbody id="tbl-outbound"><tr><td colspan="8" class="empty">載入中...</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- 統計分析 -->
+    <div class="page" id="page-dashboard">
+      <div class="section-hd"><span class="section-title">統計分析</span></div>
+      <div class="filter-bar">
+        <div class="filter-group"><span class="filter-label">年份</span><select id="f-year" onchange="renderDashboard()"><option value="">全部</option></select></div>
+        <div class="filter-group"><span class="filter-label">月份</span>
+          <select id="f-month" onchange="renderDashboard()"><option value="">全部</option>
+            <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+            <option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option>
+          </select></div>
+        <div class="filter-group"><span class="filter-label">人員</span><select id="f-person" onchange="renderDashboard()"><option value="">全部</option></select></div>
+        <div class="filter-group"><span class="filter-label">線材規格</span><select id="f-spec" onchange="renderDashboard()"><option value="">全部</option></select></div>
+        <div style="align-self:flex-end"><button class="btn btn-ghost btn-sm" onclick="clearFilters()">清除</button></div>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi-card"><span class="kpi-label">總筆數</span><span class="kpi-val count" id="kpi-count">—</span></div>
+        <div class="kpi-card"><span class="kpi-label">進料總額</span><span class="kpi-val in" id="kpi-in">—</span></div>
+        <div class="kpi-card"><span class="kpi-label">領料總額</span><span class="kpi-val out" id="kpi-out">—</span></div>
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>類型</th><th>時間</th><th>線材規格</th><th>數量</th><th>人員</th><th>用途</th><th>備註</th></tr></thead>
+        <tbody id="tbl-dashboard"></tbody>
+      </table></div>
+    </div>
+
+    <!-- 系統設定 -->
+    <div class="page" id="page-settings">
+      <div class="page-tabs">
+        <button class="page-tab active" onclick="switchSettingTab('items')">線材品項</button>
+        <button class="page-tab" onclick="switchSettingTab('persons')">人員名單</button>
+        <button class="page-tab" onclick="switchSettingTab('purposes')">領料用途</button>
+      </div>
+      <div id="stab-items">
+        <div class="section-hd"><span class="section-title">線材品項</span><button class="btn btn-primary btn-sm" onclick="openModal('modal-item')">＋ 新增</button></div>
+        <div class="tbl-wrap"><table><thead><tr><th>品項編號</th><th>線材規格</th><th>操作</th></tr></thead><tbody id="tbl-items"></tbody></table></div>
+      </div>
+      <div id="stab-persons" style="display:none">
+        <div class="section-hd"><span class="section-title">人員名單</span><button class="btn btn-primary btn-sm" onclick="openModal('modal-person')">＋ 新增</button></div>
+        <div class="tbl-wrap"><table><thead><tr><th>姓名</th><th>部門/職稱</th><th>操作</th></tr></thead><tbody id="tbl-persons"></tbody></table></div>
+      </div>
+      <div id="stab-purposes" style="display:none">
+        <div class="section-hd"><span class="section-title">領料用途</span><button class="btn btn-primary btn-sm" onclick="openModal('modal-purpose')">＋ 新增</button></div>
+        <div class="tbl-wrap"><table><thead><tr><th>用途名稱</th><th>操作</th></tr></thead><tbody id="tbl-purposes"></tbody></table></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modals -->
+<div class="modal-overlay" id="modal-inbound">
+  <div class="modal">
+    <div class="modal-title">＋ 新增進料紀錄</div>
+    <div class="form-row"><span class="form-label">線材規格 *</span><select id="in-item"><option value="">— 請選擇 —</option></select></div>
+    <div class="form-row"><span class="form-label">數量 *</span><input type="number" id="in-qty" min="1" placeholder="輸入數量"></div>
+    <div class="form-row"><span class="form-label">經手人 *</span><select id="in-person"><option value="">— 請選擇 —</option></select></div>
+    <div class="form-row"><span class="form-label">備註</span><textarea id="in-note" placeholder="選填"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-inbound')">取消</button>
+      <button class="btn btn-success" onclick="submitInbound()">確認進料</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-outbound">
+  <div class="modal">
+    <div class="modal-title">－ 新增領料紀錄</div>
+    <div class="form-row"><span class="form-label">線材規格 *</span><select id="out-item"><option value="">— 請選擇 —</option></select></div>
+    <div class="form-row"><span class="form-label">數量 *</span><input type="number" id="out-qty" min="1" placeholder="輸入數量"></div>
+    <div class="form-row"><span class="form-label">領料人 *</span><select id="out-person"><option value="">— 請選擇 —</option></select></div>
+    <div class="form-row"><span class="form-label">領料用途 *</span><select id="out-purpose"><option value="">— 請選擇 —</option></select></div>
+    <div class="form-row"><span class="form-label">備註</span><textarea id="out-note" placeholder="選填"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-outbound')">取消</button>
+      <button class="btn btn-danger" onclick="submitOutbound()">確認領料</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-item">
+  <div class="modal">
+    <div class="modal-title">新增線材品項</div>
+    <div class="form-row"><span class="form-label">品項編號 *（如 I005）</span><input type="text" id="item-id" placeholder="I005"></div>
+    <div class="form-row"><span class="form-label">線材規格 *</span><input type="text" id="item-spec" placeholder="AWG 18 / 紅色"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-item')">取消</button>
+      <button class="btn btn-primary" onclick="submitItem()">新增</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-person">
+  <div class="modal">
+    <div class="modal-title">新增人員</div>
+    <div class="form-row"><span class="form-label">姓名 *</span><input type="text" id="person-name" placeholder="王小明"></div>
+    <div class="form-row"><span class="form-label">部門/職稱</span><input type="text" id="person-dept" placeholder="生產部 / 領班"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-person')">取消</button>
+      <button class="btn btn-primary" onclick="submitPerson()">新增</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-purpose">
+  <div class="modal">
+    <div class="modal-title">新增領料用途</div>
+    <div class="form-row"><span class="form-label">用途名稱 *</span><input type="text" id="purpose-name" placeholder="報廢 / 客訴 / 專案"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-purpose')">取消</button>
+      <button class="btn btn-primary" onclick="submitPurpose()">新增</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===================== API HELPER =====================
+async function api(table, method = 'GET', body = null, query = '') {
+  const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+    'Prefer': method === 'POST' ? 'return=representation' : '',
+  };
+  const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : null });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || err.details || res.statusText);
+  }
+  if (method === 'DELETE') return null;
+  return res.json().catch(() => null);
+}
+
+const get = (table, query='') => api(table, 'GET', null, query);
+const post = (table, body) => api(table, 'POST', body);
+const del = (table, query) => api(table, 'DELETE', null, query);
+
+// ===================== CACHE =====================
+let CACHE = { items: [], persons: [], purposes: [], inbound: [], outbound: [] };
+
+async function loadAll() {
+  showLoading(true);
+  try {
+    const [items, persons, purposes, inbound, outbound] = await Promise.all([
+      get('items', '?order=id'),
+      get('persons', '?order=name'),
+      get('purposes', '?order=name'),
+      get('inbound', '?order=time.desc'),
+      get('outbound', '?order=time.desc'),
+    ]);
+    CACHE = { items, persons, purposes, inbound, outbound };
+  } catch(e) {
+    showToast('連線失敗：' + e.message, 'err');
+  }
+  showLoading(false);
+}
+
+// ===================== UTILS =====================
+function fmtTime(t) {
+  const d = new Date(t);
+  return d.toLocaleDateString('zh-TW') + ' ' + d.toTimeString().slice(0,5);
+}
+function nowISO() { return new Date().toISOString(); }
+function padId(prefix) {
+  const d = new Date();
+  const yy = String(d.getFullYear()).slice(2);
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const rand = String(Math.floor(Math.random()*9000)+1000);
+  return `${prefix}${yy}${mm}${rand}`;
+}
+function getItem(id) { return CACHE.items.find(x => x.id === id); }
+function calcInventory(itemId) {
+  const totalIn  = CACHE.inbound.filter(r => r.item_id === itemId).reduce((s,r) => s+r.qty, 0);
+  const totalOut = CACHE.outbound.filter(r => r.item_id === itemId).reduce((s,r) => s+r.qty, 0);
+  return { in: totalIn, out: totalOut, stock: totalIn - totalOut };
+}
+
+// ===================== LOADING BAR =====================
+let loadingEl;
+function showLoading(on) {
+  if (on && !loadingEl) {
+    loadingEl = document.createElement('div');
+    loadingEl.className = 'loading-bar';
+    document.body.appendChild(loadingEl);
+  } else if (!on && loadingEl) {
+    loadingEl.remove();
+    loadingEl = null;
+  }
+}
+
+// ===================== TOAST =====================
+let toastTimer;
+function showToast(msg, type='ok') {
+  const el = document.getElementById('toast');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ===================== NAVIGATION =====================
+function goPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const tabs = ['inventory','inbound','outbound','dashboard','settings'];
+  document.querySelectorAll('.nav-tab')[tabs.indexOf(name)].classList.add('active');
+  const renders = { inventory: renderInventory, inbound: renderInbound, outbound: renderOutbound, settings: renderSettings };
+  if (name === 'dashboard') { populateDashFilters(); renderDashboard(); }
+  else if (renders[name]) renders[name]();
+}
+
+function switchSettingTab(tab) {
+  ['items','persons','purposes'].forEach(t => {
+    document.getElementById('stab-' + t).style.display = t === tab ? '' : 'none';
+  });
+  document.querySelectorAll('.page-tab').forEach((el, i) => {
+    el.classList.toggle('active', ['items','persons','purposes'][i] === tab);
+  });
+}
+
+// ===================== MODALS =====================
+function openModal(id) {
+  populateDropdowns();
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function populateDropdowns() {
+  ['in-item','out-item'].forEach(sel => {
+    document.getElementById(sel).innerHTML = '<option value="">— 請選擇 —</option>' +
+      CACHE.items.map(i => `<option value="${i.id}">${i.spec}</option>`).join('');
+  });
+  ['in-person','out-person'].forEach(sel => {
+    document.getElementById(sel).innerHTML = '<option value="">— 請選擇 —</option>' +
+      CACHE.persons.map(p => `<option value="${p.name}">${p.name}　${p.dept||''}</option>`).join('');
+  });
+  document.getElementById('out-purpose').innerHTML = '<option value="">— 請選擇 —</option>' +
+    CACHE.purposes.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+}
+
+// ===================== RENDER: INVENTORY =====================
+function renderInventory() {
+  const grid = document.getElementById('inv-grid');
+  if (!CACHE.items.length) { grid.innerHTML = '<div class="empty">尚無品項，請至系統設定新增。</div>'; return; }
+  grid.innerHTML = CACHE.items.map(item => {
+    const inv = calcInventory(item.id);
+    const low = inv.stock < 50;
+    return `<div class="inv-card${low?' low':''}">
+      <div class="inv-id">${item.id}</div>
+      <div class="inv-spec">${item.spec}</div>
+      ${low ? '<span class="badge badge-out">庫存偏低</span>' : ''}
+      <div class="inv-stats">
+        <div class="inv-stat"><div class="inv-stat-label">現有庫存</div><div class="inv-stat-val stock">${inv.stock}</div></div>
+        <div class="inv-stat"><div class="inv-stat-label">累計進料</div><div class="inv-stat-val in">${inv.in}</div></div>
+        <div class="inv-stat"><div class="inv-stat-label">累計領料</div><div class="inv-stat-val out">${inv.out}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===================== RENDER: INBOUND =====================
+function renderInbound() {
+  const tb = document.getElementById('tbl-inbound');
+  if (!CACHE.inbound.length) { tb.innerHTML = '<tr><td colspan="7" class="empty">尚無進料紀錄</td></tr>'; return; }
+  tb.innerHTML = CACHE.inbound.map(r => {
+    const item = getItem(r.item_id);
+    return `<tr>
+      <td class="mono">${r.id}</td>
+      <td class="mono">${fmtTime(r.time)}</td>
+      <td>${item?.spec || r.item_id}</td>
+      <td class="mono" style="color:var(--accent2)">${r.qty}</td>
+      <td>${r.person}</td>
+      <td style="color:var(--text2)">${r.note||'—'}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteInbound('${r.id}')">刪除</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ===================== RENDER: OUTBOUND =====================
+function renderOutbound() {
+  const tb = document.getElementById('tbl-outbound');
+  if (!CACHE.outbound.length) { tb.innerHTML = '<tr><td colspan="8" class="empty">尚無領料紀錄</td></tr>'; return; }
+  tb.innerHTML = CACHE.outbound.map(r => {
+    const item = getItem(r.item_id);
+    return `<tr>
+      <td class="mono">${r.id}</td>
+      <td class="mono">${fmtTime(r.time)}</td>
+      <td>${item?.spec || r.item_id}</td>
+      <td class="mono" style="color:var(--danger)">${r.qty}</td>
+      <td>${r.person}</td>
+      <td><span class="badge badge-out">${r.purpose}</span></td>
+      <td style="color:var(--text2)">${r.note||'—'}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteOutbound('${r.id}')">刪除</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ===================== RENDER: DASHBOARD =====================
+function populateDashFilters() {
+  const allTimes = [...CACHE.inbound.map(r=>r.time), ...CACHE.outbound.map(r=>r.time)];
+  const years = [...new Set(allTimes.map(t=>t.slice(0,4)))].sort().reverse();
+  const fy = document.getElementById('f-year');
+  const cur = fy.value;
+  fy.innerHTML = '<option value="">全部</option>' + years.map(y=>`<option ${y===cur?'selected':''}>${y}</option>`).join('');
+  const fp = document.getElementById('f-person');
+  const cp = fp.value;
+  fp.innerHTML = '<option value="">全部</option>' + CACHE.persons.map(p=>`<option ${p.name===cp?'selected':''}>${p.name}</option>`).join('');
+  const fs = document.getElementById('f-spec');
+  const cs = fs.value;
+  fs.innerHTML = '<option value="">全部</option>' + CACHE.items.map(i=>`<option value="${i.id}" ${i.id===cs?'selected':''}>${i.spec}</option>`).join('');
+}
+
+function renderDashboard() {
+  const year   = document.getElementById('f-year').value;
+  const month  = document.getElementById('f-month').value;
+  const person = document.getElementById('f-person').value;
+  const specId = document.getElementById('f-spec').value;
+  function matchTime(t) {
+    if (year  && t.slice(0,4) !== year) return false;
+    if (month && parseInt(t.slice(5,7)) !== parseInt(month)) return false;
+    return true;
+  }
+  const inRows  = CACHE.inbound.filter(r => matchTime(r.time) && (!person||r.person===person) && (!specId||r.item_id===specId)).map(r=>({...r,type:'in'}));
+  const outRows = CACHE.outbound.filter(r => matchTime(r.time) && (!person||r.person===person) && (!specId||r.item_id===specId)).map(r=>({...r,type:'out'}));
+  const all = [...inRows,...outRows].sort((a,b)=>b.time.localeCompare(a.time));
+  document.getElementById('kpi-count').textContent = all.length;
+  document.getElementById('kpi-in').textContent = inRows.reduce((s,r)=>s+r.qty,0);
+  document.getElementById('kpi-out').textContent = outRows.reduce((s,r)=>s+r.qty,0);
+  const tb = document.getElementById('tbl-dashboard');
+  if (!all.length) { tb.innerHTML = '<tr><td colspan="7" class="empty">無符合條件的紀錄</td></tr>'; return; }
+  tb.innerHTML = all.map(r => {
+    const item = getItem(r.item_id);
+    return `<tr>
+      <td><span class="badge ${r.type==='in'?'badge-in':'badge-out'}">${r.type==='in'?'進料':'領料'}</span></td>
+      <td class="mono">${fmtTime(r.time)}</td>
+      <td>${item?.spec||r.item_id}</td>
+      <td class="mono" style="color:${r.type==='in'?'var(--accent2)':'var(--danger)'}">${r.qty}</td>
+      <td>${r.person}</td>
+      <td>${r.purpose||'—'}</td>
+      <td style="color:var(--text2)">${r.note||'—'}</td>
+    </tr>`;
+  }).join('');
+}
+function clearFilters() {
+  ['f-year','f-month','f-person','f-spec'].forEach(id=>document.getElementById(id).value='');
+  renderDashboard();
+}
+
+// ===================== RENDER: SETTINGS =====================
+function renderSettings() {
+  document.getElementById('tbl-items').innerHTML = CACHE.items.length
+    ? CACHE.items.map(i=>`<tr><td class="mono">${i.id}</td><td>${i.spec}</td><td><button class="btn btn-danger btn-sm" onclick="deleteItem('${i.id}')">刪除</button></td></tr>`).join('')
+    : '<tr><td colspan="3" class="empty">尚無品項</td></tr>';
+  document.getElementById('tbl-persons').innerHTML = CACHE.persons.length
+    ? CACHE.persons.map(p=>`<tr><td>${p.name}</td><td>${p.dept||''}</td><td><button class="btn btn-danger btn-sm" onclick="deletePerson('${encodeURIComponent(p.name)}')">刪除</button></td></tr>`).join('')
+    : '<tr><td colspan="3" class="empty">尚無人員</td></tr>';
+  document.getElementById('tbl-purposes').innerHTML = CACHE.purposes.length
+    ? CACHE.purposes.map(p=>`<tr><td>${p.name}</td><td><button class="btn btn-danger btn-sm" onclick="deletePurpose('${encodeURIComponent(p.name)}')">刪除</button></td></tr>`).join('')
+    : '<tr><td colspan="2" class="empty">尚無用途</td></tr>';
+}
+
+// ===================== SUBMIT =====================
+async function submitInbound() {
+  const item_id = document.getElementById('in-item').value;
+  const qty     = parseInt(document.getElementById('in-qty').value);
+  const person  = document.getElementById('in-person').value;
+  const note    = document.getElementById('in-note').value.trim();
+  if (!item_id || !qty || qty<1 || !person) { showToast('請填寫所有必填欄位','err'); return; }
+  try {
+    showLoading(true);
+    await post('inbound', { id: padId('IN-'), time: nowISO(), item_id, qty, person, note });
+    CACHE.inbound = await get('inbound','?order=time.desc');
+    closeModal('modal-inbound');
+    ['in-item','in-qty','in-person','in-note'].forEach(id=>document.getElementById(id).value='');
+    showToast('✓ 進料紀錄已新增');
+    renderInbound();
+  } catch(e) { showToast('新增失敗：'+e.message,'err'); }
+  showLoading(false);
+}
+
+async function submitOutbound() {
+  const item_id = document.getElementById('out-item').value;
+  const qty     = parseInt(document.getElementById('out-qty').value);
+  const person  = document.getElementById('out-person').value;
+  const purpose = document.getElementById('out-purpose').value;
+  const note    = document.getElementById('out-note').value.trim();
+  if (!item_id || !qty || qty<1 || !person || !purpose) { showToast('請填寫所有必填欄位','err'); return; }
+  const inv = calcInventory(item_id);
+  if (qty > inv.stock) { showToast(`庫存不足！現有 ${inv.stock} 件`,'err'); return; }
+  try {
+    showLoading(true);
+    await post('outbound', { id: padId('OUT-'), time: nowISO(), item_id, qty, person, purpose, note });
+    CACHE.outbound = await get('outbound','?order=time.desc');
+    closeModal('modal-outbound');
+    ['out-item','out-qty','out-person','out-purpose','out-note'].forEach(id=>document.getElementById(id).value='');
+    showToast('✓ 領料紀錄已新增');
+    renderOutbound();
+  } catch(e) { showToast('新增失敗：'+e.message,'err'); }
+  showLoading(false);
+}
+
+async function submitItem() {
+  const id   = document.getElementById('item-id').value.trim().toUpperCase();
+  const spec = document.getElementById('item-spec').value.trim();
+  if (!id || !spec) { showToast('請填寫品項編號與規格','err'); return; }
+  try {
+    showLoading(true);
+    await post('items', { id, spec });
+    CACHE.items = await get('items','?order=id');
+    closeModal('modal-item');
+    ['item-id','item-spec'].forEach(x=>document.getElementById(x).value='');
+    showToast('✓ 品項已新增'); renderSettings();
+  } catch(e) { showToast('新增失敗：'+e.message,'err'); }
+  showLoading(false);
+}
+
+async function submitPerson() {
+  const name = document.getElementById('person-name').value.trim();
+  const dept = document.getElementById('person-dept').value.trim();
+  if (!name) { showToast('請輸入姓名','err'); return; }
+  try {
+    showLoading(true);
+    await post('persons', { name, dept });
+    CACHE.persons = await get('persons','?order=name');
+    closeModal('modal-person');
+    ['person-name','person-dept'].forEach(x=>document.getElementById(x).value='');
+    showToast('✓ 人員已新增'); renderSettings();
+  } catch(e) { showToast('新增失敗：'+e.message,'err'); }
+  showLoading(false);
+}
+
+async function submitPurpose() {
+  const name = document.getElementById('purpose-name').value.trim();
+  if (!name) { showToast('請輸入用途名稱','err'); return; }
+  try {
+    showLoading(true);
+    await post('purposes', { name });
+    CACHE.purposes = await get('purposes','?order=name');
+    closeModal('modal-purpose');
+    document.getElementById('purpose-name').value='';
+    showToast('✓ 用途已新增'); renderSettings();
+  } catch(e) { showToast('新增失敗：'+e.message,'err'); }
+  showLoading(false);
+}
+
+// ===================== DELETE =====================
+async function deleteInbound(id) {
+  if (!confirm('確認刪除此進料紀錄？庫存將自動重算。')) return;
+  try {
+    showLoading(true);
+    await del('inbound', `?id=eq.${id}`);
+    CACHE.inbound = await get('inbound','?order=time.desc');
+    showToast('✓ 已刪除，庫存已重算'); renderInbound();
+  } catch(e) { showToast('刪除失敗：'+e.message,'err'); }
+  showLoading(false);
+}
+
+async function deleteOutbound(id) {
+  if (!confirm('確認刪除此領料紀錄？庫存將自動重算。')) return;
+  try {
+    showLoading(true);
+    await del('outbound', `?id=eq.${id}`);
+    CACHE.outbound = await get('outbound','?order=time.desc');
+    showToast('✓ 已刪除，庫存已重算'); renderOutbound();
+  } catch(e) { showToast('刪除失敗：'+e.message,'err'); }
+  showLoading(false);
+}
+
+async function deleteItem(id) {
+  if (CACHE.inbound.some(r=>r.item_id===id) || CACHE.outbound.some(r=>r.item_id===id)) {
+    showToast('此品項仍有進/領料紀錄，無法刪除','err'); return;
+  }
+  if (!confirm('確認刪除此品項？')) return;
+  try {
+    showLoading(true);
+    await del('items', `?id=eq.${id}`);
+    CACHE.items = await get('items','?order=id');
+    showToast('✓ 品項已刪除'); renderSettings();
+  } catch(e) { showToast('刪除失敗：'+e.message,'err'); }
+  showLoading(false);
+}
+
+async function deletePerson(nameEnc) {
+  const name = decodeURIComponent(nameEnc);
+  if (CACHE.inbound.some(r=>r.person===name) || CACHE.outbound.some(r=>r.person===name)) {
+    showToast('此人員仍有紀錄，無法刪除','err'); return;
+  }
+  if (!confirm('確認刪除？')) return;
+  try {
+    showLoading(true);
+    await del('persons', `?name=eq.${encodeURIComponent(name)}`);
+    CACHE.persons = await get('persons','?order=name');
+    showToast('✓ 已刪除'); renderSettings();
+  } catch(e) { showToast('刪除失敗：'+e.message,'err'); }
+  showLoading(false);
+}
+
+async function deletePurpose(nameEnc) {
+  const name = decodeURIComponent(nameEnc);
+  if (CACHE.outbound.some(r=>r.purpose===name)) {
+    showToast('此用途仍有領料紀錄，無法刪除','err'); return;
+  }
+  if (!confirm('確認刪除？')) return;
+  try {
+    showLoading(true);
+    await del('purposes', `?name=eq.${encodeURIComponent(name)}`);
+    CACHE.purposes = await get('purposes','?order=name');
+    showToast('✓ 已刪除'); renderSettings();
+  } catch(e) { showToast('刪除失敗：'+e.message,'err'); }
+  showLoading(false);
+}
+
+// Modal overlay dismiss
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target===el) el.classList.remove('open'); });
+});
+
+// ===================== INIT =====================
+loadAll().then(() => renderInventory());
+</script>
+</body>
+</html>
