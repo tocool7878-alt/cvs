@@ -178,6 +178,12 @@ textarea{resize:vertical;min-height:60px}
 .text-muted{color:var(--text3);font-size:12.5px}
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 @media(max-width:600px){.form-grid{grid-template-columns:1fr}.kpi-row{grid-template-columns:1fr 1fr}.search-input{width:130px}}
+
+/* Scroll to top */
+.scroll-top{position:fixed;bottom:28px;right:22px;width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(79,142,247,.45);opacity:0;transform:translateY(12px) scale(.85);transition:opacity .25s,transform .25s;z-index:500;pointer-events:none}
+.scroll-top.visible{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.scroll-top:hover{background:#6ba5ff;transform:translateY(-2px) scale(1)}
+.scroll-top svg{width:20px;height:20px}
 </style>
 </head>
 <body>
@@ -583,7 +589,15 @@ textarea{resize:vertical;min-height:60px}
     </div>
     <div class="form-grid">
       <div class="form-row form-full"><span class="form-label" id="out-item-lbl">線材規格 *</span>
-        <select id="out-item" onchange="onItemChange('out')"><option value="">— 請選擇 —</option></select></div>
+        <div class="sel-wrap" id="out-item-wrap">
+          <button type="button" class="sel-trigger" id="out-item-trigger" onclick="toggleSelDrop('out-item')">— 請選擇 —</button>
+          <input type="hidden" id="out-item">
+          <div class="sel-dropdown" id="out-item-drop">
+            <div class="sel-search-box"><input type="text" id="out-item-search" placeholder="輸入關鍵字篩選..." oninput="filterSelOptions('out-item')" autocomplete="off"></div>
+            <div class="sel-list" id="out-item-list"></div>
+          </div>
+        </div>
+      </div>
       <div class="form-row"><span class="form-label">單位</span><input type="text" id="out-unit" readonly></div>
       <div class="form-row"><span class="form-label">領料數量 *</span>
         <div class="qty-wrap">
@@ -621,6 +635,9 @@ textarea{resize:vertical;min-height:60px}
   </div>
 </div>
 
+<button class="scroll-top" id="scroll-top-btn" onclick="document.querySelector('.main').scrollTo({top:0,behavior:'smooth'})" title="回到頂部">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
 <div class="toast" id="toast"></div>
 <script>
 // ===================== API =====================
@@ -891,8 +908,9 @@ function pickSelOption(key, value, label){
   document.getElementById(key+'-trigger').textContent=label||'— 請選擇 —';
   document.getElementById(key+'-drop').classList.remove('open');
   document.getElementById(key+'-trigger').classList.remove('open');
-  // Trigger change logic
+  // Trigger change logic for item selects
   if(key==='in-item') onItemChange('in');
+  if(key==='out-item') onItemChange('out');
 }
 // Close sel dropdowns on outside click
 document.addEventListener('click',e=>{
@@ -1129,7 +1147,12 @@ function openOutboundModal(editId=null){
   psel.innerHTML='<option value="">— 請選擇 —</option>'+C.purposes.map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
   if(editId){
     const r=C.outbound.find(x=>x.id===editId);if(!r)return;
+    // Sync searchable select
     document.getElementById('out-item').value=r.item_id;
+    const info=getItemInfo(r.item_id,r.item_type);
+    const lbl=info?(r.item_type==='wire'?info.display_name+'-'+info.length:info.display_name):'';
+    const trigger=document.getElementById('out-item-trigger');
+    if(trigger) trigger.textContent=lbl||r.item_name||'— 請選擇 —';
     document.getElementById('out-unit').value=r.unit;
     document.getElementById('out-qty').value=r.qty;
     document.getElementById('out-person').value=r.person;
@@ -1142,6 +1165,8 @@ function openOutboundModal(editId=null){
     document.getElementById('out-qty-hint').textContent='';
   }else{
     document.getElementById('out-item').value='';
+    const trigger=document.getElementById('out-item-trigger');
+    if(trigger) trigger.textContent='— 請選擇 —';
     document.getElementById('out-unit').value='';
     document.getElementById('out-qty').value='';
     document.getElementById('out-note').value='';
@@ -1179,18 +1204,13 @@ function setModalType(scope,type){
     });
   }
 
-  // Inbound uses searchable custom select; outbound uses regular <select>
-  if(scope==='in'){
-    const wrap=document.getElementById('in-item-wrap');
-    if(wrap){
-      buildSelOptions('in-item',itemList);
-      // reset trigger text
-      document.getElementById('in-item-trigger').textContent='— 請選擇 —';
-      document.getElementById('in-item').value='';
-    }
-  }else{
-    const sel=document.getElementById('out-item');
-    sel.innerHTML='<option value="">— 請選擇 —</option>'+itemList.map(i=>`<option value="${i.value}">${i.label}</option>`).join('');
+  // Both inbound and outbound use searchable custom select
+  const wrapId=scope+'-item-wrap';
+  const wrap=document.getElementById(wrapId);
+  if(wrap){
+    buildSelOptions(scope+'-item',itemList);
+    document.getElementById(scope+'-item-trigger').textContent='— 請選擇 —';
+    document.getElementById(scope+'-item').value='';
   }
 
   document.getElementById(scope+'-unit').value='';
@@ -1741,6 +1761,12 @@ async function softDelLocation(nameEnc){
 document.addEventListener('DOMContentLoaded',()=>{
   setupSort(document.getElementById('inv-table'),'inv',renderInventory);
   // Inbound/outbound sort setup after their tables are rendered
+});
+
+// ===================== SCROLL TO TOP =====================
+document.querySelector('.main').addEventListener('scroll',function(){
+  const btn=document.getElementById('scroll-top-btn');
+  if(btn) btn.classList.toggle('visible',this.scrollTop>200);
 });
 
 // ===================== INIT =====================
