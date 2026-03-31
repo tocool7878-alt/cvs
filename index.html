@@ -1245,7 +1245,7 @@ async function submitWire(){
   const init_stock=parseInt(document.getElementById('wire-init').value)||0;
   if(!length){showToast('請選擇長度','err');return;}
   const baseName=buildWireDisplayName(conn_a,conn_a_apc,conn_b,conn_b_apc);
-  const display_name=baseName+'-'+length;
+  const display_name=baseName;;
   try{
     showLoad(true);
     if(eid){
