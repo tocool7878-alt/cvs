@@ -6,8 +6,8 @@
 <title>機房庫存系統</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
 <script>
-  const SUPABASE_URL = 'https://cniiarfcknjijkxjukag.supabase.co';
-  const SUPABASE_KEY = 'sb_publishable_8VypF8SQC5lqGDaTXuDGxQ_CgRCEtp7';
+  const SUPABASE_URL = 'https://你的專案ID.supabase.co';
+  const SUPABASE_KEY = '你的 anon public key';
 </script>
 <style>
 :root{
@@ -709,6 +709,23 @@ function nextOutId(){
 }
 
 // ===================== UTILS =====================
+function normalizeStr(str) {
+  if (!str) return '';
+  return String(str).toLowerCase().replace(/[\s\-_()]/g, '');
+}
+function isMatch(target, kw) {
+  if (!target || !kw) return false;
+  const t = normalizeStr(target);
+  const k = normalizeStr(kw);
+  if (t.includes(k)) return true;
+  // 支援光纖接頭縮寫與全稱反轉 (例如 LF <-> FL, LCFC <-> FCLC)
+  const m = t.match(/^(lc|sc|fc|l|s|f)(apc)?(lc|sc|fc|l|s|f)(apc)?(.*)/);
+  if (m) {
+    const flipped = (m[3] || '') + (m[4] || '') + m[1] + (m[2] || '') + (m[5] || '');
+    if (flipped.includes(k)) return true;
+  }
+  return false;
+}
 function fmtTime(t){if(!t)return'—';const d=new Date(t);return d.toLocaleDateString('zh-TW')+' '+d.toTimeString().slice(0,5)}
 function localISO(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)}
 function buildWireDisplayName(connA,apcA,connB,apcB){
@@ -873,7 +890,7 @@ function renderSelOptions(key,kw){
   const list=document.getElementById(key+'-list');
   if(!list) return;
   const src=selItems[key]||[];
-  const filtered=kw?src.filter(i=>i.label.toLowerCase().includes(kw.toLowerCase())):src;
+  const filtered=kw?src.filter(i=>isMatch(i.label, kw)):src;
   if(!filtered.length){
     list.innerHTML='<div class="sel-option" style="color:var(--text3);cursor:default">無符合結果</div>';
     return;
@@ -888,7 +905,7 @@ function renderSelOptions(key,kw){
       const k=this.dataset.key;
       const kw2=decodeURIComponent(this.dataset.kw||'');
       const src2=selItems[k]||[];
-      const filtered2=kw2?src2.filter(i=>i.label.toLowerCase().includes(kw2.toLowerCase())):src2;
+      const filtered2=kw2?src2.filter(i=>isMatch(i.label, kw2)):src2;
       const idx=parseInt(this.dataset.idx);
       const item=filtered2[idx];
       if(item) pickSelOption(k,item.value,item.label);
@@ -1270,13 +1287,13 @@ function renderInventory(){
     // #5: only show items with stock OR that have had any movement
     if(st.stock<=0&&st.in===0&&st.out===0) return;
     const name=w.display_name+'-'+w.length;
-    if(kw&&!name.toLowerCase().includes(kw)&&!w.id.toLowerCase().includes(kw)) return;
+    if(kw && !isMatch(name, kw) && !isMatch(w.id, kw)) return;
     rows.push({id:w.id,type:'wire',name,unit:w.unit,in:st.in,out:st.out,stock:st.stock});
   });
   if(F.inv!=='wire') C.equips.forEach(e=>{
     const st=calcStock(e.id,'equip');
     if(st.stock<=0&&st.in===0&&st.out===0) return;
-    if(kw&&!e.display_name.toLowerCase().includes(kw)&&!e.id.toLowerCase().includes(kw)) return;
+    if(kw && !isMatch(e.display_name, kw) && !isMatch(e.id, kw)) return;
     rows.push({id:e.id,type:'equip',name:e.display_name,unit:e.unit,in:st.in,out:st.out,stock:st.stock});
   });
   rows=sortData(rows,S.inv.col,S.inv.dir);
@@ -1299,7 +1316,7 @@ function renderInbound(){
   const kw=(document.getElementById('in-search')?.value||'').toLowerCase();
   let rows=C.inbound.filter(r=>{
     if(F.in!=='all'&&r.item_type!==F.in) return false;
-    if(kw&&!r.item_name.toLowerCase().includes(kw)&&!r.id.toLowerCase().includes(kw)&&!r.person.toLowerCase().includes(kw)) return false;
+    if(kw && !isMatch(r.item_name, kw) && !isMatch(r.id, kw) && !isMatch(r.person, kw)) return false;
     return true;
   });
   rows=sortData(rows,S.inbound.col,S.inbound.dir);
@@ -1327,7 +1344,7 @@ function renderOutbound(){
   const kw=(document.getElementById('out-search')?.value||'').toLowerCase();
   let rows=C.outbound.filter(r=>{
     if(F.out!=='all'&&r.item_type!==F.out) return false;
-    if(kw&&!r.item_name.toLowerCase().includes(kw)&&!r.id.toLowerCase().includes(kw)&&!r.person.toLowerCase().includes(kw)&&!(r.purpose||'').toLowerCase().includes(kw)&&!(r.location||'').toLowerCase().includes(kw)) return false;
+    if(kw && !isMatch(r.item_name, kw) && !isMatch(r.id, kw) && !isMatch(r.person, kw) && !isMatch(r.purpose, kw) && !isMatch(r.location, kw)) return false;
     return true;
   });
   rows=sortData(rows,S.outbound.col,S.outbound.dir);
@@ -1385,10 +1402,11 @@ function renderDashboard(){
     if(person&&r.person!==person) return false;
     if(fItemId&&r.item_id!==fItemId) return false;
     if(dir==='out'&&loc&&r.location!==loc) return false;
-    if(kw){
-      const hay=[r.item_name,r.person,r.id,r.note||'',(r.purpose||''),(r.location||'')].join(' ').toLowerCase();
-      if(!hay.includes(kw)) return false;
-    }
+	const rawKw = document.getElementById('f-kw').value;
+    if(rawKw){
+      const matched = [r.item_name, r.person, r.id, r.note||'', r.purpose||'', r.location||''].some(val => isMatch(val, rawKw));
+      if(!matched) return false;
+    }
     return true;
   }
   const inRows=C.inbound.filter(r=>match(r,'in')).map(r=>({...r,dir:'in'}));
@@ -1431,9 +1449,9 @@ function renderSettings(){
   const eKw=(document.getElementById('equip-search')?.value||'').toLowerCase();
 
   // Wire (with pagination)
-  const filteredWires=wKw
-    ?C.wires.filter(w=>(w.display_name+'-'+w.length).toLowerCase().includes(wKw)||w.id.toLowerCase().includes(wKw))
-    :C.wires;
+const filteredWires=wKw
+    ?C.wires.filter(w=> isMatch(w.display_name+'-'+w.length, wKw) || isMatch(w.id, wKw))
+    :C.wires;
   const pagedWires=pagedRows(filteredWires,'wire');
   document.getElementById('tbl-wire').innerHTML=pagedWires.length
     ?pagedWires.map(w=>`<tr>
@@ -1451,9 +1469,9 @@ function renderSettings(){
   renderPagination('wire-pg',filteredWires.length,'wire',renderSettings);
 
   // Equip (with pagination)
-  const filteredEquips=eKw
-    ?C.equips.filter(e=>e.display_name.toLowerCase().includes(eKw)||e.id.toLowerCase().includes(eKw)||e.category.toLowerCase().includes(eKw))
-    :C.equips;
+const filteredEquips=eKw
+    ?C.equips.filter(e=> isMatch(e.display_name, eKw) || isMatch(e.id, eKw) || isMatch(e.category, eKw))
+    :C.equips;
   const pagedEquips=pagedRows(filteredEquips,'equip');
   document.getElementById('tbl-equip').innerHTML=pagedEquips.length
     ?pagedEquips.map(e=>`<tr>
