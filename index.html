@@ -863,7 +863,7 @@ function renderSelOptions(key, kw){
   }
   const curVal=document.getElementById(key)?.value||'';
   list.innerHTML=filtered.map(i=>`
-    <div class="sel-option${i.value===curVal?' selected':''}" data-value="${i.value}" onclick="pickSelOption('${key}','${i.value}',${JSON.stringify(i.label)})">${i.label}</div>
+    <div class="sel-option${i.value===curVal?' selected':''}" data-value="${i.value}" onclick="pickSelOption('${key}', '${i.value}', this.textContent)">${i.label}</div>
   `).join('');
 }
 function filterSelOptions(key){
