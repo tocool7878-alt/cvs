@@ -1785,8 +1785,9 @@ async function softDelLocation(nameEnc){
 
 // ===================== SORT SETUP =====================
 document.addEventListener('DOMContentLoaded',()=>{
-  setupSort(document.getElementById('inv-table'),'inv',renderInventory);
-  // Inbound/outbound sort setup after their tables are rendered
+  setupSort(document.getElementById('inv-table'),'inv',renderInventory);
+  setupSort(document.querySelector('#page-inbound table'),'inbound',renderInbound);
+  setupSort(document.querySelector('#page-outbound table'),'outbound',renderOutbound);
 });
 
 // ===================== SCROLL TO TOP =====================
