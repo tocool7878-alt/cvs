@@ -343,7 +343,7 @@ textarea{resize:vertical;min-height:60px}
       <div class="sec-actions">
         <div class="search-wrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input class="search-input" type="text" placeholder="搜尋品項..." oninput="renderSettings()" id="wire-search">
+          <input class="search-input" type="text" placeholder="搜尋品項..." oninput="PG.wire=1;renderSettings()" id="wire-search">
         </div>
         <button class="btn btn-primary btn-sm" onclick="openWireModal()">＋ 新增品項</button>
       </div>
@@ -352,6 +352,7 @@ textarea{resize:vertical;min-height:60px}
       <thead><tr><th>編號</th><th>顯示名稱</th><th>A端</th><th>B端</th><th>長度</th><th>單位</th><th>初始庫存</th><th>操作</th></tr></thead>
       <tbody id="tbl-wire"></tbody>
     </table></div>
+    <div id="wire-pg"></div>
   </div>
   <div id="stab-equip" style="display:none">
     <div class="sec-hd">
@@ -359,7 +360,7 @@ textarea{resize:vertical;min-height:60px}
       <div class="sec-actions">
         <div class="search-wrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input class="search-input" type="text" placeholder="搜尋品項..." oninput="renderSettings()" id="equip-search">
+          <input class="search-input" type="text" placeholder="搜尋品項..." oninput="PG.equip=1;renderSettings()" id="equip-search">
         </div>
         <button class="btn btn-primary btn-sm" onclick="openEquipModal()">＋ 新增品項</button>
       </div>
@@ -368,6 +369,7 @@ textarea{resize:vertical;min-height:60px}
       <thead><tr><th>編號</th><th>設備種類</th><th>設備規格</th><th>單位</th><th>初始庫存</th><th>顯示名稱</th><th>操作</th></tr></thead>
       <tbody id="tbl-equip"></tbody>
     </table></div>
+    <div id="equip-pg"></div>
   </div>
   <div id="stab-persons" style="display:none">
     <div class="sec-hd"><span class="sec-title">人員名單</span><button class="btn btn-primary btn-sm" onclick="openPersonModal()">＋ 新增人員</button></div>
@@ -863,7 +865,7 @@ function renderSelOptions(key, kw){
   }
   const curVal=document.getElementById(key)?.value||'';
   list.innerHTML=filtered.map(i=>`
-    <div class="sel-option${i.value===curVal?' selected':''}" data-value="${i.value}" onclick="pickSelOption('${key}', '${i.value}', this.textContent)">${i.label}</div>
+    <div class="sel-option${i.value===curVal?' selected':''}" data-value="${i.value}" onclick="pickSelOption('${key}','${i.value}',${JSON.stringify(i.label)})">${i.label}</div>
   `).join('');
 }
 function filterSelOptions(key){
@@ -901,37 +903,74 @@ document.addEventListener('click',e=>{
 });
 
 // ===================== PAGINATION =====================
-const PAGE_SIZE=20;
-const PG={inv:1,inbound:1,outbound:1};
+const DEFAULT_PS=20;
+// Page index per table
+const PG={inv:1,inbound:1,outbound:1,wire:1,equip:1};
+// Page size per table (user-configurable, default 20)
+const PS={inv:DEFAULT_PS,inbound:DEFAULT_PS,outbound:DEFAULT_PS,wire:DEFAULT_PS,equip:DEFAULT_PS};
 
 function renderPagination(containerId,total,pageKey,renderFn){
-  const totalPages=Math.max(1,Math.ceil(total/PAGE_SIZE));
+  const ps=PS[pageKey]||DEFAULT_PS;
+  const totalPages=Math.max(1,Math.ceil(total/ps));
+  // Clamp current page
+  if(PG[pageKey]>totalPages) PG[pageKey]=totalPages;
   const cur=PG[pageKey];
-  let html=`<div class="pagination">
-    <button class="pg-btn" onclick="goPg('${pageKey}',1,this)" ${cur===1?'disabled':''}>«</button>
-    <button class="pg-btn" onclick="goPg('${pageKey}',${cur-1},this)" ${cur===1?'disabled':''}>‹</button>`;
-  // Show up to 5 page buttons
   const start=Math.max(1,cur-2),end=Math.min(totalPages,start+4);
+  let html=`<div class="pagination">
+    <button class="pg-btn" onclick="goPg('${pageKey}',1)" ${cur===1?'disabled':''}>«</button>
+    <button class="pg-btn" onclick="goPg('${pageKey}',${cur-1})" ${cur===1?'disabled':''}>‹</button>`;
   for(let p=start;p<=end;p++){
-    html+=`<button class="pg-btn${p===cur?' active':''}" onclick="goPg('${pageKey}',${p},this)">${p}</button>`;
+    html+=`<button class="pg-btn${p===cur?' active':''}" onclick="goPg('${pageKey}',${p})">${p}</button>`;
   }
-  html+=`<button class="pg-btn" onclick="goPg('${pageKey}',${cur+1},this)" ${cur===totalPages?'disabled':''}>›</button>
-    <button class="pg-btn" onclick="goPg('${pageKey}',${totalPages},this)" ${cur===totalPages?'disabled':''}>»</button>
+  html+=`<button class="pg-btn" onclick="goPg('${pageKey}',${cur+1})" ${cur===totalPages?'disabled':''}>›</button>
+    <button class="pg-btn" onclick="goPg('${pageKey}',${totalPages})" ${cur===totalPages?'disabled':''}>»</button>
     <span class="pg-info">${cur}/${totalPages} 頁，共 ${total} 筆</span>
-    <div class="pg-jump"><span>跳至</span><input type="number" min="1" max="${totalPages}" placeholder="${cur}" onkeydown="if(event.key==='Enter'){const v=parseInt(this.value);if(v>=1&&v<=${totalPages}){goPg('${pageKey}',v,null);this.value='';}}" style="width:48px;padding:5px 7px;font-size:12px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none"><span>頁</span></div>
+    <div class="pg-jump">
+      <span>跳至</span>
+      <input type="number" min="1" max="${totalPages}" placeholder="${cur}"
+        onkeydown="if(event.key==='Enter'){const v=parseInt(this.value);if(v>=1&&v<=${totalPages}){goPg('${pageKey}',v);this.value='';event.preventDefault();}}"
+        style="width:48px;padding:5px 7px;font-size:12px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
+      <span>頁</span>
+    </div>
+    <div class="pg-jump" style="margin-left:8px;border-left:1px solid var(--border);padding-left:12px">
+      <span>每頁</span>
+      <input type="number" min="5" max="200" value="${ps}"
+        onchange="setPageSize('${pageKey}',this.value)"
+        style="width:52px;padding:5px 7px;font-size:12px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
+      <span>筆</span>
+    </div>
   </div>`;
   const container=document.getElementById(containerId);
   if(container) container.innerHTML=html;
 }
-function goPg(key,page,el){
-  PG[key]=page;
+function goPg(key,page){
+  const ps=PS[key]||DEFAULT_PS;
+  const totalPages=Math.max(1,Math.ceil(
+    key==='wire'?C.wires.length:
+    key==='equip'?C.equips.length:
+    key==='inv'?999: // will be re-calculated in render
+    key==='inbound'?C.inbound.length:C.outbound.length, ps));
+  PG[key]=Math.max(1,Math.min(page,99));
   if(key==='inv') renderInventory();
   else if(key==='inbound') renderInbound();
   else if(key==='outbound') renderOutbound();
+  else if(key==='wire') renderSettings();
+  else if(key==='equip') renderSettings();
+}
+function setPageSize(key,val){
+  const n=parseInt(val);
+  if(!n||n<5) return;
+  PS[key]=n;
+  PG[key]=1;
+  if(key==='inv') renderInventory();
+  else if(key==='inbound') renderInbound();
+  else if(key==='outbound') renderOutbound();
+  else if(key==='wire'||key==='equip') renderSettings();
 }
 function pagedRows(rows,key){
-  const start=(PG[key]-1)*PAGE_SIZE;
-  return rows.slice(start,start+PAGE_SIZE);
+  const ps=PS[key]||DEFAULT_PS;
+  const start=(PG[key]-1)*ps;
+  return rows.slice(start,start+ps);
 }
 
 // --- Wire Modal ---
@@ -1362,10 +1401,14 @@ function clearDashFilters(){
 function renderSettings(){
   const wKw=(document.getElementById('wire-search')?.value||'').toLowerCase();
   const eKw=(document.getElementById('equip-search')?.value||'').toLowerCase();
-  // Wire
-  const filteredWires=wKw?C.wires.filter(w=>(w.display_name+'-'+w.length).toLowerCase().includes(wKw)||w.id.toLowerCase().includes(wKw)):C.wires;
-  document.getElementById('tbl-wire').innerHTML=filteredWires.length
-    ?filteredWires.map(w=>`<tr>
+
+  // Wire (with pagination)
+  const filteredWires=wKw
+    ?C.wires.filter(w=>(w.display_name+'-'+w.length).toLowerCase().includes(wKw)||w.id.toLowerCase().includes(wKw))
+    :C.wires;
+  const pagedWires=pagedRows(filteredWires,'wire');
+  document.getElementById('tbl-wire').innerHTML=pagedWires.length
+    ?pagedWires.map(w=>`<tr>
       <td class="mono">${w.id}</td>
       <td>${w.display_name+'-'+w.length}</td>
       <td>${w.conn_a}${w.conn_a_apc?' (APC)':''}</td>
@@ -1377,10 +1420,15 @@ function renderSettings(){
       </div></td>
     </tr>`).join('')
     :'<tr><td colspan="8" class="empty">無符合項目</td></tr>';
-  // Equip
-  const filteredEquips=eKw?C.equips.filter(e=>e.display_name.toLowerCase().includes(eKw)||e.id.toLowerCase().includes(eKw)||e.category.toLowerCase().includes(eKw)):C.equips;
-  document.getElementById('tbl-equip').innerHTML=filteredEquips.length
-    ?filteredEquips.map(e=>`<tr>
+  renderPagination('wire-pg',filteredWires.length,'wire',renderSettings);
+
+  // Equip (with pagination)
+  const filteredEquips=eKw
+    ?C.equips.filter(e=>e.display_name.toLowerCase().includes(eKw)||e.id.toLowerCase().includes(eKw)||e.category.toLowerCase().includes(eKw))
+    :C.equips;
+  const pagedEquips=pagedRows(filteredEquips,'equip');
+  document.getElementById('tbl-equip').innerHTML=pagedEquips.length
+    ?pagedEquips.map(e=>`<tr>
       <td class="mono">${e.id}</td><td>${e.category}</td><td>${e.spec}</td>
       <td>${e.unit}</td><td class="mono">${e.init_stock}</td><td>${e.display_name}</td>
       <td><div class="td-actions">
@@ -1389,6 +1437,7 @@ function renderSettings(){
       </div></td>
     </tr>`).join('')
     :'<tr><td colspan="7" class="empty">無符合項目</td></tr>';
+  renderPagination('equip-pg',filteredEquips.length,'equip',renderSettings);
   // Persons
   document.getElementById('tbl-persons').innerHTML=C.persons.length
     ?C.persons.map(p=>`<tr>
