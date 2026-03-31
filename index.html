@@ -308,14 +308,32 @@ textarea{resize:vertical;min-height:60px}
     <button class="page-tab" onclick="switchSettingTab('locations')">使用地點</button>
   </div>
   <div id="stab-wire">
-    <div class="sec-hd"><span class="sec-title">線材品項</span><button class="btn btn-primary btn-sm" onclick="openWireModal()">＋ 新增品項</button></div>
+    <div class="sec-hd">
+      <span class="sec-title">線材品項</span>
+      <div class="sec-actions">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input class="search-input" type="text" id="set-wire-kw" placeholder="搜尋線材..." oninput="P.wire=1; renderSettings()">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openWireModal()">＋ 新增品項</button>
+      </div>
+    </div>
     <div class="tbl-wrap"><table>
       <thead><tr><th>編號</th><th>顯示名稱</th><th>A端</th><th>B端</th><th>長度</th><th>單位</th><th>初始庫存</th><th>操作</th></tr></thead>
       <tbody id="tbl-wire"></tbody>
     </table></div>
   </div>
   <div id="stab-equip" style="display:none">
-    <div class="sec-hd"><span class="sec-title">設備品項</span><button class="btn btn-primary btn-sm" onclick="openEquipModal()">＋ 新增品項</button></div>
+    <div class="sec-hd">
+      <span class="sec-title">設備品項</span>
+      <div class="sec-actions">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input class="search-input" type="text" id="set-wire-kw" placeholder="搜尋線材..." oninput="P.wire=1; renderSettings()">
+        </div>      
+        <button class="btn btn-primary btn-sm" onclick="openEquipModal()">＋ 新增品項</button>
+      </div>
+    </div>
     <div class="tbl-wrap"><table>
       <thead><tr><th>編號</th><th>設備種類</th><th>設備規格</th><th>單位</th><th>初始庫存</th><th>顯示名稱</th><th>操作</th></tr></thead>
       <tbody id="tbl-equip"></tbody>
@@ -489,6 +507,7 @@ textarea{resize:vertical;min-height:60px}
     </div>
     <div class="form-grid">
       <div class="form-row form-full"><span class="form-label" id="in-item-lbl">線材規格 *</span>
+        <input type="text" id="in-item-search" placeholder="🔍 關鍵字搜尋下拉選單..." oninput="filterModalItem('in')" style="margin-bottom:6px">
         <select id="in-item" onchange="onItemChange('in')"><option value="">— 請選擇 —</option></select></div>
       <div class="form-row"><span class="form-label">單位</span><input type="text" id="in-unit" readonly></div>
       <div class="form-row"><span class="form-label">進料數量 *</span>
@@ -518,6 +537,7 @@ textarea{resize:vertical;min-height:60px}
     </div>
     <div class="form-grid">
       <div class="form-row form-full"><span class="form-label" id="out-item-lbl">線材規格 *</span>
+        <input type="text" id="in-item-search" placeholder="🔍 關鍵字搜尋下拉選單..." oninput="filterModalItem('in')" style="margin-bottom:6px">
         <select id="out-item" onchange="onItemChange('out')"><option value="">— 請選擇 —</option></select></div>
       <div class="form-row"><span class="form-label">單位</span><input type="text" id="out-unit" readonly></div>
       <div class="form-row"><span class="form-label">領料數量 *</span>
@@ -745,9 +765,9 @@ function _openModal(id){
   document.getElementById(id).classList.add('open');
 }
 // Overlay click to close
-document.querySelectorAll('.overlay').forEach(el=>{
-  el.addEventListener('click',e=>{if(e.target===el) el.classList.remove('open');});
-});
+//document.querySelectorAll('.overlay').forEach(el=>{
+// el.addEventListener('click',e=>{if(e.target===el) el.classList.remove('open');});
+//});
 
 // --- Wire Modal ---
 function openWireModal(editId=null){
@@ -923,32 +943,63 @@ function openOutboundModal(editId=null){
 }
 
 // ===================== TYPE SWITCH (in/out modal) =====================
-function setModalType(scope,type){
-  MT[scope]=type;
-  const isWire=type==='wire';
-  document.getElementById(scope+'-twire').className='btn btn-sm '+(isWire?'btn-primary':'btn-ghost');
-  document.getElementById(scope+'-tequip').className='btn btn-sm '+(isWire?'btn-ghost':'btn-purple');
-  document.getElementById(scope+'-item-lbl').textContent=isWire?'線材規格 *':'設備品項 *';
-  const sel=document.getElementById(scope+'-item');
-  if(isWire){
-    // Only show items with stock > 0 (for outbound); for inbound show all
-    let items=scope==='out'?C.wires.filter(w=>calcStock(w.id,'wire').stock>0):C.wires;
-    items=[...items].sort((a,b)=>a.display_name.localeCompare(b.display_name));
-    sel.innerHTML='<option value="">— 請選擇 —</option>'+items.map(w=>{
-      const st=scope==='out'?` (庫存:${calcStock(w.id,'wire').stock})`:'';
-      return`<option value="${w.id}">${w.display_name+'-'+w.length}${st}</option>`;
-    }).join('');
-  }else{
-    let items=scope==='out'?C.equips.filter(e=>calcStock(e.id,'equip').stock>0):C.equips;
-    items=[...items].sort((a,b)=>a.display_name.localeCompare(b.display_name));
-    sel.innerHTML='<option value="">— 請選擇 —</option>'+items.map(e=>{
-      const st=scope==='out'?` (庫存:${calcStock(e.id,'equip').stock})`:'';
-      return`<option value="${e.id}">${e.display_name}${st}</option>`;
-    }).join('');
+// 1. 新增：用來存放彈窗下拉選單的暫存資料，方便搜尋過濾
+let modalItemsData = { in: [], out: [] };
+
+// 2. 替換：覆蓋原本的 setModalType 函數
+function setModalType(scope, type) {
+  MT[scope] = type;
+  const isWire = type === 'wire';
+  document.getElementById(scope+'-twire').className = 'btn btn-sm '+(isWire?'btn-primary':'btn-ghost');
+  document.getElementById(scope+'-tequip').className = 'btn btn-sm '+(isWire?'btn-ghost':'btn-purple');
+  document.getElementById(scope+'-item-lbl').textContent = isWire?'線材規格 *':'設備品項 *';
+  
+  // 建立選項資料陣列（這段取代了原本直接塞 innerHTML 的邏輯）
+  let items = [];
+  if (isWire) {
+    items = scope === 'out' ? C.wires.filter(w => calcStock(w.id, 'wire').stock > 0) : C.wires;
+    items = [...items].sort((a, b) => a.display_name.localeCompare(b.display_name));
+    modalItemsData[scope] = items.map(w => ({ 
+      id: w.id, 
+      text: w.display_name + '-' + w.length, // 組合名稱與長度
+      stock: scope === 'out' ? calcStock(w.id, 'wire').stock : null 
+    }));
+  } else {
+    items = scope === 'out' ? C.equips.filter(e => calcStock(e.id, 'equip').stock > 0) : C.equips;
+    items = [...items].sort((a, b) => a.display_name.localeCompare(b.display_name));
+    modalItemsData[scope] = items.map(e => ({ 
+      id: e.id, 
+      text: e.display_name, 
+      stock: scope === 'out' ? calcStock(e.id, 'equip').stock : null 
+    }));
   }
+  
+  // 清空搜尋框並執行渲染
+  const searchInput = document.getElementById(scope + '-item-search');
+  if (searchInput) searchInput.value = '';
+  filterModalItem(scope);
+
   document.getElementById(scope+'-unit').value='';
   const psel=document.getElementById(scope+'-person');
   psel.innerHTML='<option value="">— 請選擇 —</option>'+C.persons.map(p=>`<option value="${p.name}">${p.name}${p.dept?' / '+p.dept:''}</option>`).join('');
+}
+
+// 3. 新增：根據搜尋關鍵字即時重建 select 的 option
+function filterModalItem(scope) {
+  const searchInput = document.getElementById(scope + '-item-search');
+  const kw = searchInput ? searchInput.value.toLowerCase() : '';
+  const sel = document.getElementById(scope + '-item');
+  if (!sel) return;
+
+  // 允許用名稱或編號搜尋
+  const filtered = modalItemsData[scope].filter(x => 
+    x.text.toLowerCase().includes(kw) || x.id.toLowerCase().includes(kw)
+  );
+  
+  sel.innerHTML = '<option value="">— 請選擇 —</option>' + filtered.map(x => {
+    const st = x.stock !== null ? ` (庫存:${x.stock})` : '';
+    return `<option value="${x.id}">${x.text}${st}</option>`;
+  }).join('');
 }
 
 function onItemChange(scope){
@@ -992,7 +1043,7 @@ function renderInventory(){
   let rows=[];
   if(F.inv!=='equip') C.wires.forEach(w=>{
     const st=calcStock(w.id,'wire');
-    if(st.stock<=0) return; // #5: only show items with stock
+    if (st.stock <= 0 && st.in === 0 && st.out === 0) return; // #5: only show items with stock
     const name=w.display_name+'-'+w.length;
     if(kw&&!name.toLowerCase().includes(kw)&&!w.id.toLowerCase().includes(kw)) return;
     rows.push({id:w.id,type:'wire',name,unit:w.unit,in:st.in,out:st.out,stock:st.stock});
@@ -1144,10 +1195,19 @@ function clearDashFilters(){
 }
 
 // ===================== RENDER: SETTINGS =====================
-function renderSettings(){
-  // Wire
-  document.getElementById('tbl-wire').innerHTML=C.wires.length
-    ?C.wires.map(w=>`<tr>
+// ===================== RENDER: SETTINGS =====================
+function renderSettings() {
+  // 1. 取得搜尋關鍵字 (針對線材與設備)
+  const kwWire = (document.getElementById('set-wire-kw')?.value || '').toLowerCase();
+  const kwEquip = (document.getElementById('set-equip-kw')?.value || '').toLowerCase();
+
+  // 2. 線材處理 (過濾 + 分頁)
+  let fWires = C.wires.filter(w => kwWire === '' || (w.display_name+'-'+w.length).toLowerCase().includes(kwWire) || w.id.toLowerCase().includes(kwWire));
+  if(typeof renderPageControl === 'function') renderPageControl(fWires.length, 'wire', 'renderSettings', 'pg-wire');
+  const pagedWires = typeof P !== 'undefined' && P.wire ? fWires.slice((P.wire - 1) * 20, P.wire * 20) : fWires;
+
+  document.getElementById('tbl-wire').innerHTML = pagedWires.length
+    ? pagedWires.map(w => `<tr>
       <td class="mono">${w.id}</td>
       <td>${w.display_name+'-'+w.length}</td>
       <td>${w.conn_a}${w.conn_a_apc?' (APC)':''}</td>
@@ -1158,10 +1218,15 @@ function renderSettings(){
         <button class="btn btn-danger btn-xs" onclick="softDelWire('${w.id}')">刪除</button>
       </div></td>
     </tr>`).join('')
-    :'<tr><td colspan="8" class="empty">尚無品項</td></tr>';
-  // Equip
-  document.getElementById('tbl-equip').innerHTML=C.equips.length
-    ?C.equips.map(e=>`<tr>
+    : '<tr><td colspan="8" class="empty">尚無符合的品項</td></tr>';
+
+  // 3. 設備處理 (過濾 + 分頁)
+  let fEquips = C.equips.filter(e => kwEquip === '' || e.display_name.toLowerCase().includes(kwEquip) || e.id.toLowerCase().includes(kwEquip));
+  if(typeof renderPageControl === 'function') renderPageControl(fEquips.length, 'equip', 'renderSettings', 'pg-equip');
+  const pagedEquips = typeof P !== 'undefined' && P.equip ? fEquips.slice((P.equip - 1) * 20, P.equip * 20) : fEquips;
+
+  document.getElementById('tbl-equip').innerHTML = pagedEquips.length
+    ? pagedEquips.map(e => `<tr>
       <td class="mono">${e.id}</td><td>${e.category}</td><td>${e.spec}</td>
       <td>${e.unit}</td><td class="mono">${e.init_stock}</td><td>${e.display_name}</td>
       <td><div class="td-actions">
@@ -1169,30 +1234,33 @@ function renderSettings(){
         <button class="btn btn-danger btn-xs" onclick="softDelEquip('${e.id}')">刪除</button>
       </div></td>
     </tr>`).join('')
-    :'<tr><td colspan="7" class="empty">尚無品項</td></tr>';
-  // Persons
-  document.getElementById('tbl-persons').innerHTML=C.persons.length
-    ?C.persons.map(p=>`<tr>
+    : '<tr><td colspan="7" class="empty">尚無符合的品項</td></tr>';
+
+  // 4. Persons
+  document.getElementById('tbl-persons').innerHTML = C.persons.length
+    ? C.persons.map(p => `<tr>
       <td>${p.name}</td><td>${p.dept||''}</td>
       <td><div class="td-actions">
         <button class="btn btn-warn btn-xs" onclick="openPersonModal('${p.name}')">修改</button>
         <button class="btn btn-danger btn-xs" onclick="softDelPerson('${encodeURIComponent(p.name)}')">刪除</button>
       </div></td>
     </tr>`).join('')
-    :'<tr><td colspan="3" class="empty">尚無人員</td></tr>';
-  // Purposes
-  document.getElementById('tbl-purposes').innerHTML=C.purposes.length
-    ?C.purposes.map(p=>`<tr>
+    : '<tr><td colspan="3" class="empty">尚無人員</td></tr>';
+    
+  // 5. Purposes
+  document.getElementById('tbl-purposes').innerHTML = C.purposes.length
+    ? C.purposes.map(p => `<tr>
       <td>${p.name}</td>
       <td><div class="td-actions">
         <button class="btn btn-warn btn-xs" onclick="openPurposeModal('${p.name}')">修改</button>
         <button class="btn btn-danger btn-xs" onclick="softDelPurpose('${encodeURIComponent(p.name)}')">刪除</button>
       </div></td>
     </tr>`).join('')
-    :'<tr><td colspan="2" class="empty">尚無用途</td></tr>';
-  // Locations
-  document.getElementById('tbl-locations').innerHTML=C.locations.length
-    ?C.locations.map(l=>`<tr>
+    : '<tr><td colspan="2" class="empty">尚無用途</td></tr>';
+    
+  // 6. Locations
+  document.getElementById('tbl-locations').innerHTML = C.locations.length
+    ? C.locations.map(l => `<tr>
       <td>${l.name}</td>
       <td>${l.is_other?'✓ 需填說明':''}</td>
       <td><div class="td-actions">
@@ -1200,7 +1268,7 @@ function renderSettings(){
         <button class="btn btn-danger btn-xs" onclick="softDelLocation('${encodeURIComponent(l.name)}')">刪除</button>
       </div></td>
     </tr>`).join('')
-    :'<tr><td colspan="3" class="empty">尚無地點</td></tr>';
+    : '<tr><td colspan="3" class="empty">尚無地點</td></tr>';
 }
 
 // ===================== DETAIL =====================
@@ -1474,7 +1542,19 @@ document.addEventListener('DOMContentLoaded',()=>{
   setupSort(document.getElementById('inv-table'),'inv',renderInventory);
   // Inbound/outbound sort setup after their tables are rendered
 });
-
+// ===================== ENTER KEY SUBMIT =====================
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (e.target.tagName === 'TEXTAREA') return; // 備註欄位按 Enter 是為了換行，不送出
+    const openModal = document.querySelector('.overlay.open');
+    if (openModal) {
+      e.preventDefault(); // 防止預設行為
+      // 尋找彈窗內的主要送出按鈕並觸發
+      const submitBtn = openModal.querySelector('.modal-actions .btn-primary, .modal-actions .btn-success, .modal-actions .btn-danger');
+      if (submitBtn && !submitBtn.disabled) submitBtn.click();
+    }
+  }
+});
 // ===================== INIT =====================
 loadAll().then(()=>renderInventory());
 </script>
