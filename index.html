@@ -670,22 +670,17 @@ const S={
 };
 
 // ===================== FUZZY SEARCH =====================
-// Supports order-independent matching: "FL" finds "LF-3M", "LF3" finds "LF-3M"
+// Rules:
+// 1. Normal substring: "LF" matches "LF-3M"  ✓
+// 2. Reverse substring: "FL" matches "LF-3M"  ✓  (reverse the query, try includes)
+// 3. No loose char-set match — "FS" must NOT match "LF-3M" just because F and S exist somewhere
 function fuzzyMatch(query,target){
   if(!query) return true;
   const q=query.toLowerCase().replace(/\s+/g,'');
   const t=target.toLowerCase();
-  if(t.includes(q)) return true;           // fast path: normal substring
-  // Sequential char match (e.g. "LF3" matches "LF-3M")
-  let ti=0;
-  for(const ch of q){
-    const found=t.indexOf(ch,ti);
-    if(found===-1) break;
-    ti=found+1;
-    if(ti===q.length) return true;         // won't reach here cleanly; use below
-  }
-  // Character-set match (order-independent): every char in query appears in target
-  return [...q].every(c=>t.includes(c));
+  if(t.includes(q)) return true;           // normal forward match
+  if(q.length>=2&&t.includes([...q].reverse().join(''))) return true; // reverse match
+  return false;
 }
 function fuzzyMatchAny(query,...fields){
   if(!query) return true;
