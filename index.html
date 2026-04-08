@@ -184,6 +184,20 @@ textarea{resize:vertical;min-height:60px}
 .scroll-top.visible{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
 .scroll-top:hover{background:#6ba5ff;transform:translateY(-2px) scale(1)}
 .scroll-top svg{width:20px;height:20px}
+
+/* Inventory Grid Layout */
+.inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.inv-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r2); padding: 16px; cursor: pointer; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; gap: 12px; }
+.inv-card:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.inv-card-hd { display: flex; justify-content: space-between; align-items: center; }
+.inv-card-title { font-size: 16px; font-weight: 500; color: var(--text); line-height: 1.4; word-break: break-all; flex: 1; }
+.inv-card-stats { display: flex; background: var(--surface); border-radius: 8px; padding: 12px; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
+.ic-stat { display: flex; flex-direction: column; gap: 4px; text-align: center; }
+.ic-lbl { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: 0.05em; text-transform: uppercase; }
+.ic-val { font-family: var(--mono); font-size: 16px; font-weight: 600; }
+.ic-main { border-left: 1px solid var(--border); padding-left: 14px; text-align: right; align-items: flex-end; }
+.ic-main .ic-val { font-size: 22px; }
+@media(max-width:600px){ .inv-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -210,26 +224,20 @@ textarea{resize:vertical;min-height:60px}
         <button class="toggle-btn" onclick="setFilter('inv','wire',this)">線材</button>
         <button class="toggle-btn" onclick="setFilter('inv','equip',this)">設備</button>
       </div>
+      <select id="inv-sort" onchange="changeInvSort()" style="width: auto; padding: 7px 10px 7px 12px; margin-right: 4px;">
+        <option value="id_asc">編號 (舊→新)</option>
+        <option value="id_desc">編號 (新→舊)</option>
+        <option value="name_asc">品項規格 (A→Z)</option>
+        <option value="stock_asc">庫存 (低→高)</option>
+        <option value="stock_desc">庫存 (高→低)</option>
+      </select>
       <div class="search-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         <input class="search-input" type="text" placeholder="關鍵字搜尋..." oninput="PG.inv=1;renderInventory()" id="inv-search">
       </div>
     </div>
   </div>
-  <div class="tbl-wrap">
-    <table id="inv-table">
-      <thead><tr>
-        <th class="sortable" data-col="id" data-tbl="inv">品項編號<i class="sort-icon">↕</i></th>
-        <th>類型</th>
-        <th class="sortable" data-col="name" data-tbl="inv">品項規格<i class="sort-icon">↕</i></th>
-        <th>單位</th>
-        <th class="sortable" data-col="in" data-tbl="inv">累計進料<i class="sort-icon">↕</i></th>
-        <th class="sortable" data-col="out" data-tbl="inv">累計領料<i class="sort-icon">↕</i></th>
-        <th class="sortable" data-col="stock" data-tbl="inv">現有庫存<i class="sort-icon">↕</i></th>
-      </tr></thead>
-      <tbody id="tbl-inventory"></tbody>
-    </table>
-  </div>
+  <div id="inv-grid" class="inv-grid"></div>
   <div id="inv-pg"></div>
 </div>
 
@@ -986,7 +994,7 @@ const DEFAULT_PS=20;
 // Page index per table
 const PG={inv:1,inbound:1,outbound:1,wire:1,equip:1};
 // Page size per table (user-configurable, default 20)
-const PS={inv:DEFAULT_PS,inbound:DEFAULT_PS,outbound:DEFAULT_PS,wire:DEFAULT_PS,equip:DEFAULT_PS};
+const PS={inv:12, inbound:DEFAULT_PS, outbound:DEFAULT_PS, wire:DEFAULT_PS, equip:DEFAULT_PS};
 
 function renderPagination(containerId,total,pageKey,renderFn){
   const ps=PS[pageKey]||DEFAULT_PS;
@@ -1315,6 +1323,15 @@ function checkOutQty(){
 }
 
 // ===================== RENDER: INVENTORY =====================
+//新增排序處理函式
+  function changeInvSort() {
+  const val = document.getElementById('inv-sort').value;
+  const [col, dir] = val.split('_');
+  S.inv.col = col;
+  S.inv.dir = dir === 'asc' ? 1 : -1;
+  PG.inv = 1; // 切換排序時回到第一頁
+  renderInventory();
+}
 function renderInventory(){
   const kw=(document.getElementById('inv-search')?.value||'').toLowerCase();
   let rows=[];
@@ -1331,18 +1348,32 @@ function renderInventory(){
     if(kw&&!fuzzyMatchAny(kw,e.display_name,e.id)) return;
     rows.push({id:e.id,type:'equip',name:e.display_name,unit:e.unit,in:st.in,out:st.out,stock:st.stock});
   });
-  rows=sortData(rows,S.inv.col,S.inv.dir);
-  const tb=document.getElementById('tbl-inventory');
-  if(!rows.length){tb.innerHTML='<tr><td colspan="7" class="empty">無庫存資料</td></tr>';document.getElementById('inv-pg').innerHTML='';return;}
+rows=sortData(rows,S.inv.col,S.inv.dir);
+  const container=document.getElementById('inv-grid'); // 改抓 grid 容器
+  if(!rows.length){
+    container.innerHTML='<div class="empty" style="grid-column: 1/-1">無庫存資料</div>';
+    document.getElementById('inv-pg').innerHTML='';
+    return;
+  }
   const paged=pagedRows(rows,'inv');
-  tb.innerHTML=paged.map(r=>`<tr class="clickable-row" onclick="openDetail('${r.id}','${r.type}')">
-    <td class="mono">${r.id}</td>
-    <td><span class="badge ${r.type==='wire'?'badge-wire':'badge-equip'}">${r.type==='wire'?'線材':'設備'}</span></td>
-    <td>${r.name}</td><td>${r.unit}</td>
-    <td class="mono" style="color:var(--accent2)">${r.in}</td>
-    <td class="mono" style="color:var(--danger)">${r.out}</td>
-    <td class="mono" style="color:var(--accent);font-weight:600">${r.stock}</td>
-  </tr>`).join('');
+  // 輸出卡片 HTML
+  container.innerHTML=paged.map(r=>`
+    <div class="inv-card" onclick="openDetail('${r.id}','${r.type}')">
+      <div class="inv-card-hd">
+        <span class="badge ${r.type==='wire'?'badge-wire':'badge-equip'}">${r.type==='wire'?'線材':'設備'}</span>
+        <span class="mono" style="color:var(--text3);font-size:12px">${r.id}</span>
+      </div>
+      <div class="inv-card-title">${r.name}</div>
+      <div class="inv-card-stats">
+        <div class="ic-stat"><div class="ic-lbl">累計進料</div><div class="ic-val" style="color:var(--accent2)">${r.in}</div></div>
+        <div class="ic-stat"><div class="ic-lbl">累計領料</div><div class="ic-val" style="color:var(--danger)">${r.out}</div></div>
+        <div class="ic-stat ic-main">
+          <div class="ic-lbl">現有庫存</div>
+          <div class="ic-val" style="color:var(--accent)">${r.stock} <span style="font-size:12px;color:var(--text3)">${r.unit}</span></div>
+        </div>
+      </div>
+    </div>
+  `).join('');
   renderPagination('inv-pg',rows.length,'inv',renderInventory);
 }
 
@@ -1818,7 +1849,7 @@ async function softDelLocation(nameEnc){
 // thead is static HTML for all tables, so we can bind once on load.
 // setupSort uses querySelectorAll on the table element's th.sortable headers.
 document.addEventListener('DOMContentLoaded',()=>{
-  setupSort(document.getElementById('inv-table'),'inv',renderInventory);
+  // setupSort(document.getElementById('inv-table'),'inv',renderInventory);
   // Inbound: find its table via the sortable th data-tbl attribute
   const inTbl=document.querySelector('th[data-tbl="inbound"]')?.closest('table');
   if(inTbl) setupSort(inTbl,'inbound',renderInbound);
