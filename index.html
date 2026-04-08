@@ -887,39 +887,29 @@ function buildSelOptions(key,items){
   selItems[key]=items;
   renderSelOptions(key,'');
 }
-function renderSelOptions(key, kw){
-  const list = document.getElementById(key + '-list');
+function renderSelOptions(key,kw){
+  const list=document.getElementById(key+'-list');
   if(!list) return;
-  
-  const src = selItems[key] || [];
-  
-  // 執行篩選
-  const filtered = kw ? src.filter(i => isMatch(i.label, kw)) : src;
-  
+  const src=selItems[key]||[];
+  const filtered=kw?src.filter(i=>fuzzyMatch(kw,i.label)):src;
   if(!filtered.length){
-    list.innerHTML = '<div class="sel-option" style="color:var(--text3);cursor:default">無符合結果</div>';
+    list.innerHTML='<div class="sel-option" style="color:var(--text3);cursor:default">無符合結果</div>';
     return;
   }
-  
-  const curVal = document.getElementById(key)?.value || '';
-  
-  // ★ 這裡只綁定 data-key 與 data-val，徹底拿掉 idx 與 kw
-  list.innerHTML = filtered.map(i => 
-    `<div class="sel-option${i.value === curVal ? ' selected' : ''}" 
-          data-key="${key}" 
-          data-val="${i.value}">${i.label}</div>`
-  ).join('');
-  
-  // ★ 綁定點擊事件
-  list.querySelectorAll('.sel-option').forEach(el => {
-    el.addEventListener('mousedown', function(e){
-      e.preventDefault(); // 防止上方搜尋框失去焦點
-      
-      const k = this.dataset.key;
-      const v = this.dataset.val;
-      const l = this.textContent; // 直接抓取畫面上你點擊的純文字，100% 精準
-      
-      if(v) pickSelOption(k, v, l);
+  const curVal=document.getElementById(key)?.value||'';
+  // Use data-idx to avoid HTML injection issues with special characters in labels
+  // Use mousedown instead of click so it fires before the blur/outside-click handler
+  list.innerHTML=filtered.map((i,idx)=>`<div class="sel-option${i.value===curVal?' selected':''}" data-key="${key}" data-idx="${idx}" data-kw="${encodeURIComponent(kw)}">${i.label}</div>`).join('');
+  list.querySelectorAll('.sel-option').forEach(el=>{
+    el.addEventListener('mousedown',function(e){
+      e.preventDefault(); // prevent blur on search input
+      const k=this.dataset.key;
+      const kw2=decodeURIComponent(this.dataset.kw||'');
+      const src2=selItems[k]||[];
+      const filtered2=kw2?src2.filter(i=>i.label.toLowerCase().includes(kw2.toLowerCase())):src2;
+      const idx=parseInt(this.dataset.idx);
+      const item=filtered2[idx];
+      if(item) pickSelOption(k,item.value,item.label);
     });
   });
 }
