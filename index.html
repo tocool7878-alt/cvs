@@ -326,14 +326,14 @@ textarea{resize:vertical;min-height:60px}
     </table></div>
     <div id="wire-pg"></div>
   </div>
-  <div id="stab-equip" style="display:none">
+<div id="stab-equip" style="display:none">
     <div class="sec-hd"><span class="sec-title">設備品項</span>
       <div class="sec-actions">
         <div class="search-wrap"><input class="search-input" type="text" placeholder="搜尋品項..." oninput="PG.equip=1;renderSettings()" id="equip-search"></div>
         <button class="btn btn-primary btn-sm" onclick="openEquipModal()">＋ 新增品項</button>
       </div></div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th>編號</th><th>設備種類</th><th>品牌</th><th>設備規格</th><th>單位</th><th>初始庫存</th><th>顯示名稱</th><th>操作</th></tr></thead>
+      <thead><tr><th>編號</th><th>設備種類</th><th>品牌</th><th>設備規格</th><th>單位</th><th>初始庫存</th><th>操作</th></tr></thead>
       <tbody id="tbl-equip"></tbody>
     </table></div>
     <div id="equip-pg"></div>
@@ -705,22 +705,10 @@ function calcStock(itemId,itemType){
 }
 function getItemInfo(id,type){return type==='wire'?C.wires.find(x=>x.id===id):C.equips.find(x=>x.id===id)}
 // [變更] 取得品項的完整顯示名稱（含品牌）
-function getItemFullName(info, type) {
-  if (!info) return '';
-  
-  if (type === 'wire') {
-    // 線材格式維持：顯示名稱-品牌-長度
-    let name = info.display_name;
-    if (info.brand) name += '-' + info.brand;
-    if (info.length) name += '-' + info.length;
-    return name;
-  } else {
-    // 設備格式改為：種類(品牌)-規格
-    let name = info.category || '';
-    if (info.brand) name += '(' + info.brand + ')';
-    if (info.spec) name += '-' + info.spec;
-    return name || info.display_name;
-  }
+function getItemFullName(info,type){
+  if(!info) return '';
+  if(type==='wire') return buildFullName(info.display_name, info.brand||'', info.length);
+  return buildFullName(info.display_name, info.brand||'', '');
 }
 
 // ===================== LOAD/TOAST =====================
@@ -1535,8 +1523,8 @@ function renderOutbound(){
     const loc=r.location+(r.location_note?'（'+r.location_note+'）':'');
     return`<tr>
       <td class="mono">${r.id}</td><td class="mono">${fmtTime(r.time)}</td>
-      <td><span class="badge ${r.item_type==='wire'?'badge-wire':'badge-equip'}">${r.item_type==='wire'?'線材':'設備'}</span></td>
-      <td>${r.item_name}</td><td>${r.unit}</td>
+<td><span class="badge ${r.item_type==='wire'?'badge-wire':'badge-equip'}">${r.item_type==='wire'?'線材':'設備'}</span></td>
+    <td>${getItemFullName(getItemInfo(r.item_id, r.item_type), r.item_type) || r.item_name}</td><td>${r.unit}</td>
       <td class="mono" style="color:var(--danger)">${r.qty}</td>
       <td>${r.person}</td><td>${loc}</td>
       <td><span class="badge badge-out">${r.purpose}</span></td>
@@ -1601,9 +1589,10 @@ function renderDashboard(){
     const loc=r.location?(r.location+(r.location_note?'（'+r.location_note+'）':'')):'—';
     return`<tr>
       <td><span class="badge ${r.item_type==='wire'?'badge-wire':'badge-equip'}">${r.item_type==='wire'?'線材':'設備'}</span></td>
+      <td>${getItemFullName(getItemInfo(r.item_id, r.item_type), r.item_type) || r.item_name}</td><td>${r.unit}</td>
       <td><span class="badge ${r.dir==='in'?'badge-in':'badge-out'}">${r.dir==='in'?'進料':'領料'}</span></td>
       <td class="mono">${fmtTime(r.time)}</td><td class="mono">${r.id}</td>
-      <td>${r.item_name}</td><td>${r.unit}</td>
+      <td>${getItemFullName(getItemInfo(r.item_id, r.item_type), r.item_type) || r.item_name}</td><td>${r.unit}</td>
       <td class="mono" style="color:${r.dir==='in'?'var(--accent2)':'var(--danger)'}">${r.qty}</td>
       <td>${r.person}</td><td>${loc}</td>
       <td>${r.purpose||'—'}</td><td style="color:var(--text2)">${r.note||'—'}</td>
@@ -1631,13 +1620,13 @@ function renderSettings(){
       <button class="btn btn-danger btn-xs" onclick="softDelWire('${w.id}')">刪除</button>
     </div></td></tr>`).join('')||'<tr><td colspan="9" class="empty">無符合項目</td></tr>';
   renderPagination('wire-pg',fw.length,'wire',renderSettings);
-  document.getElementById('tbl-equip').innerHTML=pagedRows(fe,'equip').map(e=>`<tr>
+document.getElementById('tbl-equip').innerHTML=pagedRows(fe,'equip').map(e=>`<tr>
     <td class="mono">${e.id}</td><td>${e.category}</td><td>${e.brand||'—'}</td><td>${e.spec}</td>
-    <td>${e.unit}</td><td class="mono">${e.init_stock}</td><td>${getItemFullName(e,'equip')}</td>
+    <td>${e.unit}</td><td class="mono">${e.init_stock}</td>
     <td><div class="td-actions">
       <button class="btn btn-warn btn-xs" onclick="openEquipModal('${e.id}')">修改</button>
       <button class="btn btn-danger btn-xs" onclick="softDelEquip('${e.id}')">刪除</button>
-    </div></td></tr>`).join('')||'<tr><td colspan="8" class="empty">無符合項目</td></tr>';
+    </div></td></tr>`).join('')||'<tr><td colspan="7" class="empty">無符合項目</td></tr>';
   renderPagination('equip-pg',fe.length,'equip',renderSettings);
   document.getElementById('tbl-persons').innerHTML=C.persons.map(p=>`<tr>
     <td>${p.name}</td><td>${p.dept||''}</td>
