@@ -679,7 +679,25 @@ function nextId(list,prefix,digits=3){
   const d=next>999?4:digits;
   return prefix+String(next).padStart(d,'0');
 }
-
+// 取得品項的完整顯示名稱
+function getItemFullName(info, type) {
+  if (!info) return '';
+  
+  if (type === 'wire') {
+    // 線材格式：顯示名稱-品牌-長度
+    let name = info.display_name || '';
+    if (info.brand) name += '-' + info.brand;
+    if (info.length) name += '-' + info.length;
+    return name;
+  } else {
+    // 設備格式：種類(品牌)-規格
+    let name = info.category || '';
+    if (info.brand) name += '(' + info.brand + ')';
+    if (info.spec) name += '-' + info.spec;
+    // 如果種類跟規格都有正常填寫，就會回傳 MSAN(OPNET)-MSA
+    return name || info.display_name;
+  }
+}
 // ===================== UTILS =====================
 function fmtTime(t){if(!t)return'—';const d=new Date(t);return d.toLocaleDateString('zh-TW')+' '+d.toTimeString().slice(0,5)}
 function localISO(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)}
@@ -687,15 +705,7 @@ function buildWireDisplayName(connA,apcA,connB,apcB){
   return connA[0]+(apcA?'(APC)':'')+connB[0]+(apcB?'(APC)':'');
 }
 // [變更] 品項全名組合：有品牌就插入，無品牌省略
-function buildFullName(base,brand,suffix){
-  // base: 規格主體 (LL 或 MSAN-MSG)
-  // brand: 品牌字串或空字串
-  // suffix: 線材長度 (1M) 或空字串
-  let name=base;
-  if(brand) name+='-'+brand;
-  if(suffix) name+='-'+suffix;
-  return name;
-}
+
 function calcStock(itemId,itemType){
   const item=itemType==='wire'?C.wires.find(w=>w.id===itemId):C.equips.find(e=>e.id===itemId);
   const init=item?item.init_stock:0;
@@ -704,12 +714,7 @@ function calcStock(itemId,itemType){
   return{init,in:ti,out:to,stock:init+ti-to};
 }
 function getItemInfo(id,type){return type==='wire'?C.wires.find(x=>x.id===id):C.equips.find(x=>x.id===id)}
-// [變更] 取得品項的完整顯示名稱（含品牌）
-function getItemFullName(info,type){
-  if(!info) return '';
-  if(type==='wire') return buildFullName(info.display_name, info.brand||'', info.length);
-  return buildFullName(info.display_name, info.brand||'', '');
-}
+
 
 // ===================== LOAD/TOAST =====================
 let loadEl;
