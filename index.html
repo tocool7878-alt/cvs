@@ -705,10 +705,22 @@ function calcStock(itemId,itemType){
 }
 function getItemInfo(id,type){return type==='wire'?C.wires.find(x=>x.id===id):C.equips.find(x=>x.id===id)}
 // [變更] 取得品項的完整顯示名稱（含品牌）
-function getItemFullName(info,type){
-  if(!info) return '';
-  if(type==='wire') return buildFullName(info.display_name, info.brand||'', info.length);
-  return buildFullName(info.display_name, info.brand||'', '');
+function getItemFullName(info, type) {
+  if (!info) return '';
+  
+  if (type === 'wire') {
+    // 線材格式維持：顯示名稱-品牌-長度
+    let name = info.display_name;
+    if (info.brand) name += '-' + info.brand;
+    if (info.length) name += '-' + info.length;
+    return name;
+  } else {
+    // 設備格式改為：種類(品牌)-規格
+    let name = info.category || '';
+    if (info.brand) name += '(' + info.brand + ')';
+    if (info.spec) name += '-' + info.spec;
+    return name || info.display_name;
+  }
 }
 
 // ===================== LOAD/TOAST =====================
