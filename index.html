@@ -701,11 +701,17 @@ function getItemFullName(info, type) {
 // ===================== UTILS =====================
 function fmtTime(t){if(!t)return'—';const d=new Date(t);return d.toLocaleDateString('zh-TW')+' '+d.toTimeString().slice(0,5)}
 function localISO(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)}
+// 將 UTC 字串轉回 datetime-local 專用的本地時間格式
+function toLocalInputFormat(utcString) {
+  if (!utcString) return localISO();
+  const d = new Date(utcString);
+// 扣掉時區差異，轉回本地時間
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
 function buildWireDisplayName(connA,apcA,connB,apcB){
   return connA[0]+(apcA?'(APC)':'')+connB[0]+(apcB?'(APC)':'');
 }
 // [變更] 品項全名組合：有品牌就插入，無品牌省略
-
 function calcStock(itemId,itemType){
   const item=itemType==='wire'?C.wires.find(w=>w.id===itemId):C.equips.find(e=>e.id===itemId);
   const init=item?item.init_stock:0;
@@ -1258,7 +1264,7 @@ function openInboundModal(editId=null){
     document.getElementById('in-qty').value=r.qty;
     document.getElementById('in-person').value=r.person;
     document.getElementById('in-note').value=r.note||'';
-    document.getElementById('in-time').value=r.time?r.time.slice(0,16):localISO();
+    document.getElementById('in-time').value = r.time ? toLocalInputFormat(r.time) : localISO();
   }else{
     document.getElementById('in-item').value='';
     const trigger=document.getElementById('in-item-trigger');
@@ -1291,7 +1297,7 @@ function openOutboundModal(editId=null){
     document.getElementById('out-location-note').value=r.location_note||'';
     document.getElementById('out-purpose').value=r.purpose;
     document.getElementById('out-note').value=r.note||'';
-    document.getElementById('out-time').value=r.time?r.time.slice(0,16):localISO();
+    document.getElementById('out-time').value = r.time ? toLocalInputFormat(r.time) : localISO();
     onLocationChange();document.getElementById('out-qty-hint').textContent='';
   }else{
     document.getElementById('out-item').value='';
