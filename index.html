@@ -83,12 +83,12 @@
           <div class="search-wrap">
             <input class="search-input" type="text" placeholder="關鍵字搜尋..." oninput="PG.outbound=1;renderOutbound()" id="out-search">
           </div>
-          <div class="toggle-group">
-            <button class="toggle-btn active" onclick="setFilter('in','all',this)">全部</button>
-            <button class="toggle-btn" onclick="setFilter('in','wire',this)">線材</button>
-            <button class="toggle-btn" onclick="setFilter('in','equip',this)">設備</button>
-            <button class="toggle-btn" onclick="setFilter('in','power',this)">電力</button>
-          </div>
+<div class="toggle-group">
+  <button class="toggle-btn active" onclick="setFilter('out','all',this)">全部</button>
+  <button class="toggle-btn" onclick="setFilter('out','wire',this)">線材</button>
+  <button class="toggle-btn" onclick="setFilter('out','equip',this)">設備</button>
+  <button class="toggle-btn" onclick="setFilter('out','power',this)">電力</button>
+</div>
           <button class="btn btn-danger" onclick="openOutboundModal()">－ 新增領料</button>
         </div>
       </div>
