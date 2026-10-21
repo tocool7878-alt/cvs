@@ -21,12 +21,23 @@ function switchSettingTab(tab) {
   });
 }
 function setFilter(scope, val, el) {
-  F[scope] = val; const pgKey = { inv: 'inv', in: 'inbound', out: 'outbound' }[scope];
-  if(pgKey) PG[pgKey] = 1;
-  const pg = { inv: 'page-inventory', in: 'page-inbound', out: 'page-outbound' }[scope];
-  document.querySelectorAll('#' + pg + ' .toggle-btn').forEach(b => b.classList.remove('active'));
+  F[scope] = val;
+  const pgKey = { inv: 'inv', in: 'inbound', out: 'outbound' }[scope];
+  if (pgKey) PG[pgKey] = 1;
+
+  // 取得當前被點擊按鈕所在的那個 toggle-group，將裡面的 active 全數清空
+  const group = el.closest('.toggle-group');
+  if (group) {
+    group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+  }
+  
+  // 加上被點擊按鈕的 active
   el.classList.add('active');
-  if(scope === 'inv') renderInventory(); else if(scope === 'in') renderInbound(); else renderOutbound();
+
+  // 重新渲染對應頁面
+  if (scope === 'inv') renderInventory();
+  else if (scope === 'in') renderInbound();
+  else if (scope === 'out') renderOutbound();
 }
 
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
