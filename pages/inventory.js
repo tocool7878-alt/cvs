@@ -6,22 +6,38 @@ function changeInvSort(){
 function renderInventory(){
   const kw = (document.getElementById('inv-search')?.value||'');
   let rows = [];
-  if(F.inv !== 'equip') C.wires.forEach(w => {
+  
+  if(F.inv === 'all' || F.inv === 'wire') C.wires.forEach(w => {
     const st = calcStock(w.id, 'wire'); if(st.stock<=0 && st.in===0 && st.out===0) return;
     const name = getItemFullName(w, 'wire'); if(kw && !fuzzyMatchAny(kw, name, w.id)) return;
     rows.push({id:w.id, type:'wire', name, unit:w.unit, in:st.in, out:st.out, stock:st.stock});
   });
-  if(F.inv !== 'wire') C.equips.forEach(e => {
+  
+  if(F.inv === 'all' || F.inv === 'equip') C.equips.forEach(e => {
     const st = calcStock(e.id, 'equip'); if(st.stock<=0 && st.in===0 && st.out===0) return;
     const name = getItemFullName(e, 'equip'); if(kw && !fuzzyMatchAny(kw, name, e.id)) return;
     rows.push({id:e.id, type:'equip', name, unit:e.unit, in:st.in, out:st.out, stock:st.stock});
   });
+
+  if(F.inv === 'all' || F.inv === 'power') C.powers.forEach(p => {
+    const st = calcStock(p.id, 'power'); if(st.stock<=0 && st.in===0 && st.out===0) return;
+    const name = getItemFullName(p, 'power'); if(kw && !fuzzyMatchAny(kw, name, p.id)) return;
+    rows.push({id:p.id, type:'power', name, unit:p.unit, in:st.in, out:st.out, stock:st.stock});
+  });
+
   rows = sortData(rows, S.inv.col, S.inv.dir);
   const container = document.getElementById('inv-grid');
   if(!rows.length) { container.innerHTML = '<div class="empty" style="grid-column:1/-1">無庫存資料</div>'; document.getElementById('inv-pg').innerHTML=''; return; }
+  
+  const badgeMap = { wire: 'badge-wire', equip: 'badge-equip', power: 'badge-warn' };
+  const labelMap = { wire: '線材', equip: '設備', power: '電力' };
+
   container.innerHTML = pagedRows(rows, 'inv').map(r => `
     <div class="inv-card" onclick="openDetail('${r.id}','${r.type}')">
-      <div class="inv-card-hd"><span class="badge ${r.type==='wire'?'badge-wire':'badge-equip'}">${r.type==='wire'?'線材':'設備'}</span><span class="mono" style="color:var(--text3);font-size:12px">${r.id}</span></div>
+      <div class="inv-card-hd">
+        <span class="badge ${badgeMap[r.type]}">${labelMap[r.type]}</span>
+        <span class="mono" style="color:var(--text3);font-size:12px">${r.id}</span>
+      </div>
       <div class="inv-card-title">${r.name}</div>
       <div class="inv-card-stats">
         <div class="ic-stat"><div class="ic-lbl">累計進料</div><div class="ic-val" style="color:var(--accent2)">${r.in}</div></div>
