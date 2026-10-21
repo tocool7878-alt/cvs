@@ -22,6 +22,129 @@ function renderSettings() {
   document.getElementById('tbl-locations').innerHTML = C.locations.map(l => `<tr><td>${l.name}</td><td>${l.is_other?'✓ 需填說明':''}</td><td><div class="td-actions"><button class="btn btn-warn btn-xs" onclick="openLocationModal('${l.name}')">修改</button><button class="btn btn-danger btn-xs" onclick="softDelLocation('${encodeURIComponent(l.name)}')">刪除</button></div></td></tr>`).join('') || '<tr><td colspan="3" class="empty">尚無地點</td></tr>';
   const brandTbl = document.getElementById('tbl-brands');
   if(brandTbl) brandTbl.innerHTML = C.brands.map(b => `<tr><td>${b.name}</td><td><div class="td-actions"><button class="btn btn-warn btn-xs" onclick="openBrandModal('${b.name}')">修改</button><button class="btn btn-danger btn-xs" onclick="softDelBrand('${encodeURIComponent(b.name)}')">刪除</button></div></td></tr>`).join('') || '<tr><td colspan="2" class="empty">尚無品牌</td></tr>';
+  //電力設備列表與分頁渲染
+  const pKw = (document.getElementById('power-search')?.value||'');
+  const fp = pKw ? C.powers.filter(p => fuzzyMatchAny(pKw, getItemFullName(p,'power'), p.id, p.category)) : C.powers;
+  const tblPower = document.getElementById('tbl-power');
+  if (tblPower) {
+  tblPower.innerHTML = pagedRows(fp, 'power').map(p => `<tr>
+    <td class="mono">${p.id}</td><td>${p.category}</td><td>${p.brand||'—'}</td><td>${p.spec}</td>
+    <td>${p.unit}</td><td class="mono">${p.init_stock}</td>
+    <td><div class="td-actions"><button class="btn btn-warn btn-xs" onclick="openPowerModal('${p.id}')">修改</button><button class="btn btn-danger btn-xs" onclick="softDelPower('${p.id}')">刪除</button></div></td></tr>`).join('') || '<tr><td colspan="7" class="empty">無符合項目</td></tr>';
+  renderPagination('power-pg', fp.length, 'power', renderSettings);
+}
+}
+
+// === 電力設備專用 Modal 函式 ===
+function openPowerModal(editId=null) {
+  document.getElementById('power-eid').value = editId || '';
+  document.getElementById('mpower-title').textContent = editId ? '修改電力設備品項' : '新增電力設備品項';
+  const sel = document.getElementById('power-cat');
+  sel.innerHTML = '<option value="">— 請選擇 —</option>' + C.powerCats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+  _populateBrandSel('power-brand');
+  
+  if(editId) {
+    const p = C.powers.find(x => x.id === editId); if(!p) return;
+    document.getElementById('power-id').value = p.id;
+    sel.value = p.category;
+    document.getElementById('power-brand').value = p.brand || '';
+    document.getElementById('power-spec').value = p.spec;
+    document.getElementById('power-init').value = p.init_stock;
+    const stdUnits = ['台','片','架','組'];
+    if(stdUnits.includes(p.unit)) {
+      document.getElementById('power-unit').value = p.unit;
+      document.getElementById('power-unit-custom').style.display = 'none';
+    } else {
+      document.getElementById('power-unit').value = '__custom__';
+      document.getElementById('power-unit-custom').style.display = '';
+      document.getElementById('power-unit-custom').value = p.unit;
+    }
+  } else {
+    document.getElementById('power-id').value = nextId(C.powers, 'E'); // 編號為 E 開頭
+    sel.value = '';
+    document.getElementById('power-brand').value = '';
+    document.getElementById('power-spec').value = '';
+    document.getElementById('power-unit').value = '';
+    document.getElementById('power-unit-custom').style.display = 'none';
+    document.getElementById('power-unit-custom').value = '';
+    document.getElementById('power-init').value = '0';
+    document.getElementById('power-cat-new').value = '';
+    document.getElementById('power-brand-new').value = '';
+  }
+  _openModal('modal-power');
+}
+async function addPowerCat() {
+  const name = document.getElementById('power-cat-new').value.trim();
+  if(!name) { showToast('請輸入種類名稱', 'err'); return; }
+  if(C.powerCats.find(c => c.name === name)) { showToast('此種類已存在', 'err'); return; }
+  try {
+    showLoad(true);
+    await dbPost('power_categories', { name, sort_order: C.powerCats.length + 1 });
+    C.powerCats = await dbGet('power_categories', '?deleted_at=is.null&order=sort_order');
+    const sel = document.getElementById('power-cat');
+    sel.innerHTML = '<option value="">— 請選擇 —</option>' + C.powerCats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+    sel.value = name;
+    document.getElementById('power-cat-new').value = '';
+    showToast('✓ 種類已新增');
+  } catch(e) { showToast('失敗：'+e.message, 'err'); }
+  showLoad(false);
+}
+
+async function addBrandFromPower() {
+  const name = document.getElementById('power-brand-new').value.trim();
+  if(!name) { showToast('請輸入品牌名稱', 'err'); return; }
+  if(C.brands.find(b => b.name === name)) { showToast('此品牌已存在', 'err'); return; }
+  try {
+    showLoad(true);
+    await dbPost('brands', { name, sort_order: C.brands.length + 1 });
+    C.brands = await dbGet('brands', '?deleted_at=is.null&order=sort_order');
+    _populateBrandSel('power-brand');
+    document.getElementById('power-brand').value = name;
+    document.getElementById('power-brand-new').value = '';
+    showToast('✓ 品牌已新增');
+  } catch(e) { showToast('失敗：'+e.message, 'err'); }
+  showLoad(false);
+}
+
+async function submitPower() {
+  const eid = document.getElementById('power-eid').value;
+  const category = document.getElementById('power-cat').value;
+  const brand = document.getElementById('power-brand').value;
+  const spec = document.getElementById('power-spec').value.trim();
+  let unit = document.getElementById('power-unit').value;
+  if(unit === '__custom__') unit = document.getElementById('power-unit-custom').value.trim();
+  const init_stock = parseInt(document.getElementById('power-init').value) || 0;
+  if(!category || !spec || !unit) { showToast('請填寫種類、規格與單位', 'err'); return; }
+  const display_name = category + '-' + spec;
+  try {
+    showLoad(true);
+    if(eid) {
+      await dbPatch('power_items', `?id=eq.${eid}`, { category, brand, spec, display_name, unit, init_stock });
+      showToast('✓ 品項已更新');
+    } else {
+      await dbPost('power_items', { id: nextId(C.powers, 'E'), category, brand, spec, display_name, unit, init_stock });
+      showToast('✓ 電力設備品項已新增');
+    }
+    C.powers = await dbGet('power_items', '?deleted_at=is.null&order=id');
+    closeModal('modal-power');
+    renderSettings();
+  } catch(e) { showToast('失敗：'+e.message, 'err'); }
+  showLoad(false);
+}
+
+async function softDelPower(id) {
+  if(C.inbound.some(r => r.item_id === id && r.item_type === 'power') || C.outbound.some(r => r.item_id === id && r.item_type === 'power')) {
+    showToast('此品項仍有進/領料紀錄，無法刪除', 'err'); return;
+  }
+  if(!confirm('確認刪除電力設備品項？（資料庫仍保留）')) return;
+  try {
+    showLoad(true);
+    await dbSoftDel('power_items', `?id=eq.${id}`);
+    C.powers = await dbGet('power_items', '?deleted_at=is.null&order=id');
+    showToast('✓ 已刪除');
+    renderSettings();
+  } catch(e) { showToast('失敗：'+e.message, 'err'); }
+  showLoad(false);
 }
 
 function updateWirePreview() {
