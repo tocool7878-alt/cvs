@@ -10,7 +10,7 @@ function renderInbound() {
   if(!rows.length) { tb.innerHTML = '<tr><td colspan="9" class="empty">無資料</td></tr>'; document.getElementById('in-pg').innerHTML=''; return; }
   tb.innerHTML = pagedRows(rows, 'inbound').map(r => `<tr>
     <td class="mono">${r.id}</td><td class="mono">${fmtTime(r.time)}</td>
-    <td><span class="badge ${r.item_type==='wire'?'badge-wire':'badge-equip'}">${r.item_type==='wire'?'線材':'設備'}</span></td>
+    <td><span class="badge ${r.item_type==='wire'?'badge-wire':(r.item_type==='power'?'badge-warn':'badge-equip')}">${r.item_type==='wire'?'線材':(r.item_type==='power'?'電力':'設備')}</span></td>
     <td>${getItemFullName(getItemInfo(r.item_id, r.item_type), r.item_type) || r.item_name}</td><td>${r.unit}</td>
     <td class="mono" style="color:var(--accent2)">${r.qty}</td><td>${r.person}</td><td style="color:var(--text2)">${r.note||'—'}</td>
     <td><div class="td-actions"><button class="btn btn-warn btn-xs" onclick="openInboundModal('${r.id}')">修改</button><button class="btn btn-danger btn-xs" onclick="softDelInbound('${r.id}')">刪除</button></div></td></tr>`).join('');
