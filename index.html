@@ -25,11 +25,12 @@
       <div class="sec-hd">
         <span class="sec-title">庫存總表</span>
         <div class="sec-actions">
-          <div class="toggle-group">
-            <button class="toggle-btn active" onclick="setFilter('inv','all',this)">全部</button>
-            <button class="toggle-btn" onclick="setFilter('inv','wire',this)">線材</button>
-            <button class="toggle-btn" onclick="setFilter('inv','equip',this)">設備</button>
-          </div>
+        <div class="toggle-group">
+          <button class="toggle-btn active" onclick="setFilter('inv','all',this)">全部</button>
+          <button class="toggle-btn" onclick="setFilter('inv','wire',this)">線材</button>
+          <button class="toggle-btn" onclick="setFilter('inv','equip',this)">設備</button>
+          <button class="toggle-btn" onclick="setFilter('inv','power',this)">電力</button>
+        </div>
           <select id="inv-sort" onchange="changeInvSort()" style="width:auto;padding:7px 10px 7px 12px;margin-right:4px">
             <option value="id_asc">編號 (舊→新)</option>
             <option value="id_desc">編號 (新→舊)</option>
@@ -57,6 +58,7 @@
             <button class="toggle-btn active" onclick="setFilter('in','all',this)">全部</button>
             <button class="toggle-btn" onclick="setFilter('in','wire',this)">線材</button>
             <button class="toggle-btn" onclick="setFilter('in','equip',this)">設備</button>
+            <button class="toggle-btn" onclick="setFilter('in','power',this)">電力</button>
           </div>
           <button class="btn btn-success" onclick="openInboundModal()">＋ 新增進料</button>
         </div>
@@ -82,9 +84,10 @@
             <input class="search-input" type="text" placeholder="關鍵字搜尋..." oninput="PG.outbound=1;renderOutbound()" id="out-search">
           </div>
           <div class="toggle-group">
-            <button class="toggle-btn active" onclick="setFilter('out','all',this)">全部</button>
-            <button class="toggle-btn" onclick="setFilter('out','wire',this)">線材</button>
-            <button class="toggle-btn" onclick="setFilter('out','equip',this)">設備</button>
+            <button class="toggle-btn active" onclick="setFilter('in','all',this)">全部</button>
+            <button class="toggle-btn" onclick="setFilter('in','wire',this)">線材</button>
+            <button class="toggle-btn" onclick="setFilter('in','equip',this)">設備</button>
+            <button class="toggle-btn" onclick="setFilter('in','power',this)">電力</button>
           </div>
           <button class="btn btn-danger" onclick="openOutboundModal()">－ 新增領料</button>
         </div>
@@ -108,7 +111,14 @@
         <div class="filter-group"><span class="filter-label">年份</span><select id="f-year" onchange="renderDashboard()"><option value="">全部</option></select></div>
         <div class="filter-group"><span class="filter-label">月份</span>
           <select id="f-month" onchange="renderDashboard()"><option value="">全部</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select></div>
-        <div class="filter-group"><span class="filter-label">類型</span><select id="f-type" onchange="renderDashboard()"><option value="">全部</option><option value="wire">線材</option><option value="equip">設備</option></select></div>
+        <div class="filter-group"><span class="filter-label">類型</span>
+          <select id="f-type" onchange="updateDashboardItemFilter();renderDashboard()">
+            <option value="">全部</option>
+            <option value="wire">線材</option>
+            <option value="equip">設備</option>
+            <option value="power">電力</option>
+          </select>
+        </div>
         <div class="filter-group"><span class="filter-label">人員</span><select id="f-person" onchange="renderDashboard()"><option value="">全部</option></select></div>
         <div class="filter-group"><span class="filter-label">品項</span><select id="f-item" onchange="renderDashboard()"><option value="">全部</option></select></div>
         <div class="filter-group"><span class="filter-label">地點</span><select id="f-loc" onchange="renderDashboard()"><option value="">全部</option></select></div>
@@ -126,16 +136,17 @@
         <tbody id="tbl-dashboard"></tbody>
       </table></div>
     </div>
-
     <div class="page" id="page-settings">
-      <div class="page-tabs">
-        <button class="page-tab active" onclick="switchSettingTab('wire')">線材品項</button>
-        <button class="page-tab" onclick="switchSettingTab('equip')">設備品項</button>
-        <button class="page-tab" onclick="switchSettingTab('persons')">人員名單</button>
-        <button class="page-tab" onclick="switchSettingTab('purposes')">領料用途</button>
-        <button class="page-tab" onclick="switchSettingTab('locations')">使用地點</button>
-        <button class="page-tab" onclick="switchSettingTab('brands')">品牌管理</button>
-      </div>
+    <!-- 頁籤按鈕 -->
+    <div class="page-tabs">
+      <button class="page-tab active" onclick="switchSettingTab('wire')">線材品項</button>
+      <button class="page-tab" onclick="switchSettingTab('equip')">設備品項</button>
+      <button class="page-tab" onclick="switchSettingTab('power')">電力設備品項</button>
+      <button class="page-tab" onclick="switchSettingTab('persons')">人員名單</button>
+      <button class="page-tab" onclick="switchSettingTab('purposes')">領料用途</button>
+      <button class="page-tab" onclick="switchSettingTab('locations')">使用地點</button>
+      <button class="page-tab" onclick="switchSettingTab('brands')">品牌管理</button>
+    </div>
       <div id="stab-wire">
         <div class="sec-hd"><span class="sec-title">線材品項</span>
           <div class="sec-actions"><div class="search-wrap"><input class="search-input" type="text" placeholder="搜尋品項..." oninput="PG.wire=1;renderSettings()" id="wire-search"></div><button class="btn btn-primary btn-sm" onclick="openWireModal()">＋ 新增品項</button></div></div>
@@ -148,6 +159,22 @@
         <div class="tbl-wrap"><table><thead><tr><th>編號</th><th>設備種類</th><th>品牌</th><th>設備規格</th><th>單位</th><th>初始庫存</th><th>操作</th></tr></thead><tbody id="tbl-equip"></tbody></table></div>
         <div id="equip-pg"></div>
       </div>
+
+      <!-- 電力設備表格區塊 -->
+      <div id="stab-power" style="display:none">
+        <div class="sec-hd"><span class="sec-title">電力設備品項</span>
+          <div class="sec-actions">
+            <div class="search-wrap"><input class="search-input" type="text" placeholder="搜尋品項..." oninput="PG.power=1;renderSettings()" id="power-search"></div>
+            <button class="btn btn-primary btn-sm" onclick="openPowerModal()">＋ 新增品項</button>
+          </div>
+        </div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>編號</th><th>設備種類</th><th>品牌</th><th>設備規格</th><th>單位</th><th>初始庫存</th><th>操作</th></tr></thead>
+          <tbody id="tbl-power"></tbody>
+        </table></div>
+        <div id="power-pg"></div>
+      </div>
+      
       <div id="stab-persons" style="display:none">
         <div class="sec-hd"><span class="sec-title">人員名單</span><button class="btn btn-primary btn-sm" onclick="openPersonModal()">＋ 新增人員</button></div>
         <div class="tbl-wrap"><table><thead><tr><th>姓名</th><th>部門/職稱</th><th>操作</th></tr></thead><tbody id="tbl-persons"></tbody></table></div>
@@ -208,7 +235,44 @@
   </div>
   <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('modal-equip')">取消</button><button class="btn btn-primary" onclick="submitEquip()">儲存</button></div>
 </div></div>
-
+<!-- 電力設備品項 Modal -->
+<div class="overlay" id="modal-power"><div class="modal">
+  <button class="modal-close" onclick="closeModal('modal-power')" title="關閉 (Esc)">✕</button>
+  <div class="modal-title" id="mpower-title">新增電力設備品項</div>
+  <input type="hidden" id="power-eid">
+  <div class="form-grid">
+    <div class="form-row"><span class="form-label">品項編號</span>
+      <input type="text" id="power-id" readonly placeholder="系統自動產生">
+      <span class="form-hint">E開頭，系統自動編排</span></div>
+    <div class="form-row"><span class="form-label">設備種類 *</span>
+      <select id="power-cat"><option value="">— 請選擇 —</option></select>
+      <div class="inline-add">
+        <input type="text" id="power-cat-new" placeholder="新增種類...">
+        <button class="btn btn-ghost btn-sm" onclick="addPowerCat()">新增</button>
+      </div></div>
+    <div class="form-row"><span class="form-label">品牌 <span style="color:var(--text3);font-weight:400">（選填）</span></span>
+      <select id="power-brand"><option value="">— 不指定 —</option></select>
+      <div class="inline-add">
+        <input type="text" id="power-brand-new" placeholder="快速新增品牌...">
+        <button class="btn btn-ghost btn-sm" onclick="addBrandFromPower()">新增</button>
+      </div></div>
+    <div class="form-row"><span class="form-label">設備規格 *</span>
+      <input type="text" id="power-spec" placeholder="例如：100A無熔絲開關"></div>
+    <div class="form-row"><span class="form-label">單位 *</span>
+      <select id="power-unit">
+        <option value="">— 請選擇 —</option>
+        <option>台</option><option>個</option><option>顆</option><option>組</option>
+        <option value="__custom__">＋ 自訂單位...</option>
+      </select>
+      <input type="text" id="power-unit-custom" placeholder="自訂單位" style="display:none;margin-top:6px"></div>
+    <div class="form-row"><span class="form-label">初始庫存</span>
+      <input type="number" id="power-init" min="0" value="0"></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" onclick="closeModal('modal-power')">取消</button>
+    <button class="btn btn-primary" onclick="submitPower()">儲存</button>
+  </div>
+</div></div>
 <div class="overlay" id="modal-person"><div class="modal"><button class="modal-close" onclick="closeModal('modal-person')">✕</button><div class="modal-title" id="mperson-title">新增人員</div><input type="hidden" id="person-eorig"><div class="form-grid"><div class="form-row"><span class="form-label">姓名 *</span><input type="text" id="person-name" placeholder="王小明"></div><div class="form-row"><span class="form-label">部門/職稱</span><input type="text" id="person-dept" placeholder="生產部 / 領班"></div></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('modal-person')">取消</button><button class="btn btn-primary" onclick="submitPerson()">儲存</button></div></div></div>
 
 <div class="overlay" id="modal-purpose"><div class="modal"><button class="modal-close" onclick="closeModal('modal-purpose')">✕</button><div class="modal-title" id="mpurpose-title">新增領料用途</div><input type="hidden" id="purpose-eorig"><div class="form-row"><span class="form-label">用途名稱 *</span><input type="text" id="purpose-name" placeholder="報廢 / 客訴 / 專案"></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('modal-purpose')">取消</button><button class="btn btn-primary" onclick="submitPurpose()">儲存</button></div></div></div>
@@ -220,7 +284,11 @@
 <div class="overlay" id="modal-inbound"><div class="modal">
   <button class="modal-close" onclick="closeModal('modal-inbound')">✕</button>
   <div class="modal-title" id="min-title">新增進料紀錄</div><input type="hidden" id="in-eid">
-  <div class="modal-type-bar"><button class="btn btn-primary btn-sm" id="in-twire" onclick="setModalType('in','wire')">線材</button><button class="btn btn-ghost btn-sm" id="in-tequip" onclick="setModalType('in','equip')">設備</button></div>
+<div class="modal-type-bar">
+  <button class="btn btn-primary btn-sm" id="in-twire" onclick="setModalType('in','wire')">線材</button>
+  <button class="btn btn-ghost btn-sm" id="in-tequip" onclick="setModalType('in','equip')">設備</button>
+  <button class="btn btn-ghost btn-sm" id="in-tpower" onclick="setModalType('in','power')">電力</button>
+</div>
   <div class="form-grid">
     <div class="form-row form-full"><span class="form-label" id="in-item-lbl">線材規格 *</span>
       <div class="sel-wrap" id="in-item-wrap">
@@ -239,7 +307,11 @@
 <div class="overlay" id="modal-outbound"><div class="modal">
   <button class="modal-close" onclick="closeModal('modal-outbound')">✕</button>
   <div class="modal-title" id="mout-title">新增領料紀錄</div><input type="hidden" id="out-eid">
-  <div class="modal-type-bar"><button class="btn btn-primary btn-sm" id="out-twire" onclick="setModalType('out','wire')">線材</button><button class="btn btn-ghost btn-sm" id="out-tequip" onclick="setModalType('out','equip')">設備</button></div>
+  <div class="modal-type-bar">
+    <button class="btn btn-primary btn-sm" id="out-twire" onclick="setModalType('out','wire')">線材</button>
+    <button class="btn btn-ghost btn-sm" id="out-tequip" onclick="setModalType('out','equip')">設備</button>
+    <button class="btn btn-ghost btn-sm" id="out-tpower" onclick="setModalType('out','power')">電力</button>
+  </div>
   <div class="form-grid">
     <div class="form-row form-full"><span class="form-label" id="out-item-lbl">線材規格 *</span>
       <div class="sel-wrap" id="out-item-wrap">
