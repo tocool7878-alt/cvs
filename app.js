@@ -12,11 +12,11 @@ function goPage(name) {
   else if(name === 'settings') renderSettings();
 }
 function switchSettingTab(tab) {
-  ['wire','equip','persons','purposes','locations','brands'].forEach(t => {
+  const tabs = ['wire', 'equip', 'power', 'persons', 'purposes', 'locations', 'brands'];
+  tabs.forEach(t => {
     const el = document.getElementById('stab-' + t); if(el) el.style.display = t === tab ? '' : 'none';
   });
   document.querySelectorAll('.page-tab').forEach((el, i) => {
-    const tabs = ['wire','equip','persons','purposes','locations','brands'];
     el.classList.toggle('active', tabs[i] === tab);
   });
 }
@@ -39,23 +39,36 @@ function _openModal(id) {
 }
 
 function setModalType(scope, type) {
-  MT[scope] = type; const isWire = type === 'wire';
+  MT[scope] = type;
+  const isWire = type === 'wire';
+  const isEquip = type === 'equip';
+  const isPower = type === 'power';
+
   document.getElementById(scope+'-twire').className = 'btn btn-sm ' + (isWire ? 'btn-primary' : 'btn-ghost');
-  document.getElementById(scope+'-tequip').className = 'btn btn-sm ' + (isWire ? 'btn-ghost' : 'btn-purple');
-  document.getElementById(scope+'-item-lbl').textContent = isWire ? '線材規格 *' : '設備品項 *';
+  document.getElementById(scope+'-tequip').className = 'btn btn-sm ' + (isEquip ? 'btn-purple' : 'btn-ghost');
+  document.getElementById(scope+'-tpower').className = 'btn btn-sm ' + (isPower ? 'btn-warn' : 'btn-ghost');
+
+  document.getElementById(scope+'-item-lbl').textContent = isWire ? '線材規格 *' : (isPower ? '電力設備規格 *' : '設備品項 *');
+
   let itemList = [];
   if(isWire) {
     let items = scope === 'out' ? C.wires.filter(w => calcStock(w.id, 'wire').stock > 0) : C.wires;
     items = [...items].sort((a,b) => getItemFullName(a, 'wire').localeCompare(getItemFullName(b, 'wire')));
     itemList = items.map(w => { const st = scope === 'out' ? ` (庫存:${calcStock(w.id, 'wire').stock})` : ''; return { value: w.id, label: getItemFullName(w, 'wire') + st }; });
-  } else {
+  } else if(isEquip) {
     let items = scope === 'out' ? C.equips.filter(e => calcStock(e.id, 'equip').stock > 0) : C.equips;
     items = [...items].sort((a,b) => getItemFullName(a, 'equip').localeCompare(getItemFullName(b, 'equip')));
     itemList = items.map(e => { const st = scope === 'out' ? ` (庫存:${calcStock(e.id, 'equip').stock})` : ''; return { value: e.id, label: getItemFullName(e, 'equip') + st }; });
+  } else if(isPower) {
+    let items = scope === 'out' ? C.powers.filter(p => calcStock(p.id, 'power').stock > 0) : C.powers;
+    items = [...items].sort((a,b) => getItemFullName(a, 'power').localeCompare(getItemFullName(b, 'power')));
+    itemList = items.map(p => { const st = scope === 'out' ? ` (庫存:${calcStock(p.id, 'power').stock})` : ''; return { value: p.id, label: getItemFullName(p, 'power') + st }; });
   }
+
   buildSelOptions(scope+'-item', itemList);
   document.getElementById(scope+'-item-trigger').textContent = '— 請選擇 —';
-  document.getElementById(scope+'-item').value = ''; document.getElementById(scope+'-unit').value = '';
+  document.getElementById(scope+'-item').value = '';
+  document.getElementById(scope+'-unit').value = '';
   const psel = document.getElementById(scope+'-person');
   psel.innerHTML = '<option value="">— 請選擇 —</option>' + C.persons.map(p => `<option value="${p.name}">${p.name}${p.dept ? ' / '+p.dept : ''}</option>`).join('');
 }
@@ -68,14 +81,20 @@ function onItemChange(scope) {
 async function loadAll() {
   showLoad(true);
   try {
-    const [wires, equips, equipCats, persons, purposes, locations, brands, inbound, outbound] = await Promise.all([
-      dbGet('wire_items', '?deleted_at=is.null&order=id'), dbGet('equip_items', '?deleted_at=is.null&order=id'),
-      dbGet('equip_categories', '?deleted_at=is.null&order=sort_order'), dbGet('persons', '?deleted_at=is.null&order=name'),
-      dbGet('purposes', '?deleted_at=is.null&order=name'), dbGet('locations', '?deleted_at=is.null&order=sort_order'),
-      dbGet('brands', '?deleted_at=is.null&order=sort_order'), dbGet('inbound', '?deleted_at=is.null&order=id.desc'),
+    const [wires, equips, equipCats, powers, powerCats, persons, purposes, locations, brands, inbound, outbound] = await Promise.all([
+      dbGet('wire_items', '?deleted_at=is.null&order=id'),
+      dbGet('equip_items', '?deleted_at=is.null&order=id'),
+      dbGet('equip_categories', '?deleted_at=is.null&order=sort_order'),
+      dbGet('power_items', '?deleted_at=is.null&order=id'),
+      dbGet('power_categories', '?deleted_at=is.null&order=sort_order'),
+      dbGet('persons', '?deleted_at=is.null&order=name'),
+      dbGet('purposes', '?deleted_at=is.null&order=name'),
+      dbGet('locations', '?deleted_at=is.null&order=sort_order'),
+      dbGet('brands', '?deleted_at=is.null&order=sort_order'),
+      dbGet('inbound', '?deleted_at=is.null&order=id.desc'),
       dbGet('outbound', '?deleted_at=is.null&order=id.desc'),
     ]);
-    C = { wires, equips, equipCats, persons, purposes, locations, brands, inbound, outbound };
+    C = { wires, equips, equipCats, powers, powerCats, persons, purposes, locations, brands, inbound, outbound };
   } catch(e) { showToast('連線失敗：'+e.message, 'err'); }
   showLoad(false);
 }
