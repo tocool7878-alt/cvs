@@ -12,7 +12,7 @@ function renderOutbound() {
     const loc = r.location + (r.location_note ? '（'+r.location_note+'）' : '');
     return `<tr>
       <td class="mono">${r.id}</td><td class="mono">${fmtTime(r.time)}</td>
-      <td><span class="badge ${r.item_type==='wire'?'badge-wire':'badge-equip'}">${r.item_type==='wire'?'線材':'設備'}</span></td>
+      <td><span class="badge ${r.item_type==='wire'?'badge-wire':(r.item_type==='power'?'badge-warn':'badge-equip')}">${r.item_type==='wire'?'線材':(r.item_type==='power'?'電力':'設備')}</span></td>
       <td>${getItemFullName(getItemInfo(r.item_id, r.item_type), r.item_type) || r.item_name}</td><td>${r.unit}</td>
       <td class="mono" style="color:var(--danger)">${r.qty}</td><td>${r.person}</td><td>${loc}</td>
       <td><span class="badge badge-out">${r.purpose}</span></td><td style="color:var(--text2)">${r.note||'—'}</td>
