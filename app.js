@@ -112,6 +112,10 @@ async function loadAll() {
 
 // 綁定全域監聽事件
 document.addEventListener('DOMContentLoaded', () => {
+  //總表表頭排序
+  const invTbl = document.querySelector('th[data-tbl="inventory"]')?.closest('table');
+  if (invTbl) setupSort(invTbl, 'inv', renderInventory);
+  
   // 設定表格排序
   const inTbl = document.querySelector('th[data-tbl="inbound"]')?.closest('table'); if(inTbl) setupSort(inTbl, 'inbound', renderInbound);
   const outTbl = document.querySelector('th[data-tbl="outbound"]')?.closest('table'); if(outTbl) setupSort(outTbl, 'outbound', renderOutbound);
