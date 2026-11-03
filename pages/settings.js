@@ -148,12 +148,21 @@ async function softDelPower(id) {
 }
 
 function updateWirePreview() {
+  const core = document.getElementById('wire-core')?.value || '雙';
   const a = document.getElementById('wire-conn-a').value, aApc = document.getElementById('wire-apc-a').checked;
   const b = document.getElementById('wire-conn-b').value, bApc = document.getElementById('wire-apc-b').checked;
-  const len = document.getElementById('wire-length').value === '__custom__' ? document.getElementById('wire-length-custom').value : document.getElementById('wire-length').value;
+  const len = document.getElementById('wire-length').value === '__custom__' 
+    ? document.getElementById('wire-length-custom').value 
+    : document.getElementById('wire-length').value;
   const brand = document.getElementById('wire-brand').value;
   const base = buildWireDisplayName(a, aApc, b, bApc);
-  document.getElementById('wire-preview').textContent = getItemFullName({ display_name: base, brand: brand, length: len }, 'wire');
+  
+  document.getElementById('wire-preview').textContent = getItemFullName({
+    core_type: core,
+    display_name: base,
+    brand: brand,
+    length: len
+  }, 'wire');
 }
 function openWireModal(editId=null) {
   document.getElementById('wire-eid').value = editId || ''; document.getElementById('mwire-title').textContent = editId ? '修改線材品項' : '新增線材品項';
