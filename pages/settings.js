@@ -2,6 +2,7 @@ function _populateBrandSel(selId) {
   const sel = document.getElementById(selId);
   sel.innerHTML = '<option value="">— 不指定 —</option>' + C.brands.map(b => `<option value="${b.name}">${b.name}</option>`).join('');
 }
+// 1. 線材列表渲染（移除品牌欄位）
 function renderSettings() {
   const wKw = (document.getElementById('wire-search')?.value||''), eKw = (document.getElementById('equip-search')?.value||'');
   const fw = wKw ? C.wires.filter(w => fuzzyMatchAny(wKw, getItemFullName(w,'wire'), w.id)) : C.wires;
@@ -10,25 +11,29 @@ function renderSettings() {
     <td class="mono">${w.id}</td>
     <td>${getItemFullName(w, 'wire')}</td>
     <td><span class="badge ${w.core_type === '單' ? 'badge-in' : 'badge-wire'}">${w.core_type || '雙'}</span></td>
-    <td>${w.conn_a}${w.conn_a_apc?' (APC)':''}</td>
-    <td>${w.conn_b}${w.conn_b_apc?' (APC)':''}</td>
-    <td>${w.brand||'—'}</td>
+    <td>${w.conn_a}${w.conn_a_apc ? ' (APC)' : ''}</td>
+    <td>${w.conn_b}${w.conn_b_apc ? ' (APC)' : ''}</td>
     <td>${w.length}</td>
     <td>${w.unit}</td>
     <td class="mono">${w.init_stock}</td>
-    <td><div class="td-actions"><button class="btn btn-warn btn-xs" onclick="openWireModal('${w.id}')">修改</button><button class="btn btn-danger btn-xs" onclick="softDelWire('${w.id}')">刪除</button></div></td>
-  </tr>`).join('') || '<tr><td colspan="10" class="empty">無符合項目</td></tr>';
+    <td><div class="td-actions">
+      <button class="btn btn-warn btn-xs" onclick="openWireModal('${w.id}')">修改</button>
+      <button class="btn btn-danger btn-xs" onclick="softDelWire('${w.id}')">刪除</button>
+    </div></td>
+  </tr>`).join('') || '<tr><td colspan="9" class="empty">無符合項目</td></tr>';
   renderPagination('wire-pg', fw.length, 'wire', renderSettings);
+
   document.getElementById('tbl-equip').innerHTML = pagedRows(fe, 'equip').map(e => `<tr>
-    <td class="mono">${e.id}</td><td>${e.category}</td><td>${e.brand||'—'}</td><td>${e.spec}</td>
-    <td>${e.unit}</td><td class="mono">${e.init_stock}</td>
-    <td><div class="td-actions"><button class="btn btn-warn btn-xs" onclick="openEquipModal('${e.id}')">修改</button><button class="btn btn-danger btn-xs" onclick="softDelEquip('${e.id}')">刪除</button></div></td></tr>`).join('') || '<tr><td colspan="7" class="empty">無符合項目</td></tr>';
+  <td class="mono">${e.id}</td><td>${e.category}</td><td>${e.brand||'—'}</td><td>${e.spec}</td>
+  <td>${e.unit}</td><td class="mono">${e.init_stock}</td>
+  <td><div class="td-actions"><button class="btn btn-warn btn-xs" onclick="openEquipModal('${e.id}')">修改</button><button class="btn btn-danger btn-xs" onclick="softDelEquip('${e.id}')">刪除</button></div></td></tr>`).join('') || '<tr><td colspan="7" class="empty">無符合項目</td></tr>';
   renderPagination('equip-pg', fe.length, 'equip', renderSettings);
   document.getElementById('tbl-persons').innerHTML = C.persons.map(p => `<tr><td>${p.name}</td><td>${p.dept||''}</td><td><div class="td-actions"><button class="btn btn-warn btn-xs" onclick="openPersonModal('${p.name}')">修改</button><button class="btn btn-danger btn-xs" onclick="softDelPerson('${encodeURIComponent(p.name)}')">刪除</button></div></td></tr>`).join('') || '<tr><td colspan="3" class="empty">尚無人員</td></tr>';
   document.getElementById('tbl-purposes').innerHTML = C.purposes.map(p => `<tr><td>${p.name}</td><td><div class="td-actions"><button class="btn btn-warn btn-xs" onclick="openPurposeModal('${p.name}')">修改</button><button class="btn btn-danger btn-xs" onclick="softDelPurpose('${encodeURIComponent(p.name)}')">刪除</button></div></td></tr>`).join('') || '<tr><td colspan="2" class="empty">尚無用途</td></tr>';
   document.getElementById('tbl-locations').innerHTML = C.locations.map(l => `<tr><td>${l.name}</td><td>${l.is_other?'✓ 需填說明':''}</td><td><div class="td-actions"><button class="btn btn-warn btn-xs" onclick="openLocationModal('${l.name}')">修改</button><button class="btn btn-danger btn-xs" onclick="softDelLocation('${encodeURIComponent(l.name)}')">刪除</button></div></td></tr>`).join('') || '<tr><td colspan="3" class="empty">尚無地點</td></tr>';
   const brandTbl = document.getElementById('tbl-brands');
   if(brandTbl) brandTbl.innerHTML = C.brands.map(b => `<tr><td>${b.name}</td><td><div class="td-actions"><button class="btn btn-warn btn-xs" onclick="openBrandModal('${b.name}')">修改</button><button class="btn btn-danger btn-xs" onclick="softDelBrand('${encodeURIComponent(b.name)}')">刪除</button></div></td></tr>`).join('') || '<tr><td colspan="2" class="empty">尚無品牌</td></tr>';
+  
   //電力設備列表與分頁渲染
   const pKw = (document.getElementById('power-search')?.value||'');
   const fp = pKw ? C.powers.filter(p => fuzzyMatchAny(pKw, getItemFullName(p,'power'), p.id, p.category)) : C.powers;
@@ -153,39 +158,35 @@ async function softDelPower(id) {
   } catch(e) { showToast('失敗：'+e.message, 'err'); }
   showLoad(false);
 }
-
+// 2. 線材規格預覽（移除品牌）
 function updateWirePreview() {
-  const core = document.getElementById('wire-core')?.value || '雙';
+const core = document.getElementById('wire-core')?.value || '雙';
   const a = document.getElementById('wire-conn-a').value, aApc = document.getElementById('wire-apc-a').checked;
   const b = document.getElementById('wire-conn-b').value, bApc = document.getElementById('wire-apc-b').checked;
   const len = document.getElementById('wire-length').value === '__custom__' 
     ? document.getElementById('wire-length-custom').value 
     : document.getElementById('wire-length').value;
-  const brand = document.getElementById('wire-brand').value;
   const base = buildWireDisplayName(a, aApc, b, bApc);
   
   document.getElementById('wire-preview').textContent = getItemFullName({
     core_type: core,
     display_name: base,
-    brand: brand,
     length: len
   }, 'wire');
 }
+// 3. 開啟線材 Modal（移除品牌欄位帶值）
 function openWireModal(editId=null) {
   document.getElementById('wire-eid').value = editId || ''; 
   document.getElementById('mwire-title').textContent = editId ? '修改線材品項' : '新增線材品項';
-  _populateBrandSel('wire-brand');
 
   if(editId) {
     const w = C.wires.find(x => x.id === editId); if(!w) return;
     document.getElementById('wire-id').value = w.id;
-    // 帶入芯數（舊品項若無則帶預設 '雙'）
     document.getElementById('wire-core').value = w.core_type || '雙';
     document.getElementById('wire-conn-a').value = w.conn_a;
     document.getElementById('wire-apc-a').checked = w.conn_a_apc;
     document.getElementById('wire-conn-b').value = w.conn_b;
     document.getElementById('wire-apc-b').checked = w.conn_b_apc;
-    document.getElementById('wire-brand').value = w.brand || '';
     document.getElementById('wire-init').value = w.init_stock;
     
     const stdLens = ['1M','2M','3M','5M','6M','8M','10M','12M','15M','20M'];
@@ -199,36 +200,29 @@ function openWireModal(editId=null) {
     }
   } else {
     document.getElementById('wire-id').value = nextId(C.wires, 'W');
-    document.getElementById('wire-core').value = '雙'; // 新增預設為雙
+    document.getElementById('wire-core').value = '雙';
     document.getElementById('wire-conn-a').value = 'LC';
     document.getElementById('wire-apc-a').checked = false;
     document.getElementById('wire-conn-b').value = 'LC';
     document.getElementById('wire-apc-b').checked = false;
-    document.getElementById('wire-brand').value = '';
     document.getElementById('wire-length').value = '';
     document.getElementById('wire-length-custom').style.display = 'none';
     document.getElementById('wire-length-custom').value = '';
     document.getElementById('wire-init').value = '0';
-    document.getElementById('wire-brand-new').value = '';
   }
   updateWirePreview();
   _openModal('modal-wire');
 }
-async function addBrandFromWire() {
-  const name = document.getElementById('wire-brand-new').value.trim(); if(!name) { showToast('請輸入品牌名稱', 'err'); return; }
-  if(C.brands.find(b => b.name === name)) { showToast('此品牌已存在', 'err'); return; }
-  try { showLoad(true); await dbPost('brands', { name, sort_order: C.brands.length + 1 }); C.brands = await dbGet('brands', '?deleted_at=is.null&order=sort_order'); _populateBrandSel('wire-brand'); document.getElementById('wire-brand').value = name; document.getElementById('wire-brand-new').value = ''; updateWirePreview(); showToast('✓ 品牌已新增'); }
-  catch(e) { showToast('失敗：'+e.message, 'err'); } showLoad(false);
-}
+// 4. 送出線材品項（不送出 brand）
 async function submitWire() {
   const eid = document.getElementById('wire-eid').value;
-  const core_type = document.getElementById('wire-core').value; // 取得單 / 雙
+  const core_type = document.getElementById('wire-core').value;
   let length = document.getElementById('wire-length').value;
   if(length === '__custom__') length = document.getElementById('wire-length-custom').value.trim();
   
   const conn_a = document.getElementById('wire-conn-a').value, conn_a_apc = document.getElementById('wire-apc-a').checked;
   const conn_b = document.getElementById('wire-conn-b').value, conn_b_apc = document.getElementById('wire-apc-b').checked;
-  const brand = document.getElementById('wire-brand').value, init_stock = parseInt(document.getElementById('wire-init').value) || 0;
+  const init_stock = parseInt(document.getElementById('wire-init').value) || 0;
   
   if(!length) { showToast('請選擇長度', 'err'); return; }
   const display_name = buildWireDisplayName(conn_a, conn_a_apc, conn_b, conn_b_apc);
@@ -237,12 +231,12 @@ async function submitWire() {
     showLoad(true);
     if(eid) {
       await dbPatch('wire_items', `?id=eq.${eid}`, { 
-        core_type, conn_a, conn_a_apc, conn_b, conn_b_apc, display_name, length, brand, init_stock 
+        core_type, conn_a, conn_a_apc, conn_b, conn_b_apc, display_name, length, brand: '', init_stock 
       });
       showToast('✓ 品項已更新');
     } else {
       await dbPost('wire_items', { 
-        id: nextId(C.wires, 'W'), core_type, conn_a, conn_a_apc, conn_b, conn_b_apc, display_name, length, brand, unit: '包', init_stock 
+        id: nextId(C.wires, 'W'), core_type, conn_a, conn_a_apc, conn_b, conn_b_apc, display_name, length, brand: '', unit: '包', init_stock 
       });
       showToast('✓ 線材品項已新增');
     }
@@ -250,7 +244,7 @@ async function submitWire() {
     closeModal('modal-wire');
     renderSettings();
   } catch(e) {
-    showToast('失敗：'+e.message, 'err');
+    showToast('失敗：' + e.message, 'err');
   }
   showLoad(false);
 }
