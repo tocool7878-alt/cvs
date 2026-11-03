@@ -166,7 +166,9 @@
       <div id="stab-wire">
         <div class="sec-hd"><span class="sec-title">線材品項</span>
           <div class="sec-actions"><div class="search-wrap"><input class="search-input" type="text" placeholder="搜尋品項..." oninput="PG.wire=1;renderSettings()" id="wire-search"></div><button class="btn btn-primary btn-sm" onclick="openWireModal()">＋ 新增品項</button></div></div>
-        <div class="tbl-wrap"><table><thead><tr><th>編號</th><th>顯示名稱</th><th>A端</th><th>B端</th><th>品牌</th><th>長度</th><th>單位</th><th>初始庫存</th><th>操作</th></tr></thead><tbody id="tbl-wire"></tbody></table></div>
+        <div class="tbl-wrap"><table><thead><tr>
+          <th>編號</th><th>顯示名稱</th><th>芯數</th><th>A端</th><th>B端</th><th>品牌</th><th>長度</th><th>單位</th><th>初始庫存</th><th>操作</th>
+        </tr></thead><tbody id="tbl-wire"></tbody></table></div>
         <div id="wire-pg"></div>
       </div>
       <div id="stab-equip" style="display:none">
@@ -219,14 +221,32 @@
   <div class="form-grid">
     <div class="form-row"><span class="form-label">品項編號</span><input type="text" id="wire-id" readonly placeholder="系統自動產生"><span class="form-hint">W開頭，系統自動編排</span></div>
     <div class="form-row"><span class="form-label">單位</span><input type="text" value="包" readonly><span class="form-hint">固定為「包」</span></div>
-    <div class="form-full"><span class="form-label" style="display:block;margin-bottom:8px">線材規格</span>
-      <div class="conn-row">
-        <div class="conn-box"><span class="form-label">A 端接頭</span><select id="wire-conn-a"><option value="LC">LC</option><option value="SC">SC</option><option value="FC">FC</option></select><label class="apc-check"><input type="checkbox" id="wire-apc-a"> APC</label></div>
-        <div class="conn-sep">—</div>
-        <div class="conn-box"><span class="form-label">B 端接頭</span><select id="wire-conn-b"><option value="LC">LC</option><option value="SC">SC</option><option value="FC">FC</option></select><label class="apc-check"><input type="checkbox" id="wire-apc-b"> APC</label></div>
+<div class="form-full">
+        <span class="form-label" style="display:block;margin-bottom:8px">線材規格</span>
+        <div class="conn-row" style="grid-template-columns: 90px 1fr auto 1fr;">
+          <div class="conn-box">
+            <span class="form-label">芯數 *</span>
+            <select id="wire-core">
+              <option value="雙">雙</option>
+              <option value="單">單</option>
+            </select>
+          </div>
+          <div class="conn-box">
+            <span class="form-label">A 端接頭</span>
+            <select id="wire-conn-a"><option value="LC">LC</option><option value="SC">SC</option><option value="FC">FC</option></select>
+            <label class="apc-check"><input type="checkbox" id="wire-apc-a"> APC</label>
+          </div>
+          <div class="conn-sep">—</div>
+          <div class="conn-box">
+            <span class="form-label">B 端接頭</span>
+            <select id="wire-conn-b"><option value="LC">LC</option><option value="SC">SC</option><option value="FC">FC</option></select>
+            <label class="apc-check"><input type="checkbox" id="wire-apc-b"> APC</label>
+          </div>
+        </div>
+        <div style="margin-top:8px;padding:8px 12px;background:var(--surface3);border-radius:6px;font-family:var(--mono);font-size:12px;color:var(--text2)">
+          預覽：<span id="wire-preview" style="color:var(--accent)"></span>
+        </div>
       </div>
-      <div style="margin-top:8px;padding:8px 12px;background:var(--surface3);border-radius:6px;font-family:var(--mono);font-size:12px;color:var(--text2)">預覽：<span id="wire-preview" style="color:var(--accent)"></span></div>
-    </div>
     <div class="form-row"><span class="form-label">品牌 <span style="color:var(--text3);font-weight:400">（選填）</span></span><select id="wire-brand"><option value="">— 不指定 —</option></select>
       <div class="inline-add"><input type="text" id="wire-brand-new" placeholder="快速新增品牌..."><button class="btn btn-ghost btn-sm" onclick="addBrandFromWire()">新增</button></div></div>
     <div class="form-row"><span class="form-label">長度 *</span><select id="wire-length"><option value="">— 請選擇 —</option><option>1M</option><option>2M</option><option>3M</option><option>5M</option><option>6M</option><option>8M</option><option>10M</option><option>12M</option><option>15M</option><option>20M</option><option value="__custom__">＋ 自訂長度...</option></select><input type="text" id="wire-length-custom" placeholder="輸入自訂長度，如 25M" style="display:none;margin-top:6px"></div>
