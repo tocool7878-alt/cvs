@@ -43,7 +43,23 @@
           </div>
         </div>
       </div>
-      <div id="inv-grid" class="inv-grid"></div>
+      <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="sortable" data-col="id" data-tbl="inventory">品項編號<i class="sort-icon">↕</i></th>
+          <th>類型</th>
+          <th class="sortable" data-col="name" data-tbl="inventory">品項規格<i class="sort-icon">↕</i></th>
+          <th>單位</th>
+          <th class="sortable" data-col="in" data-tbl="inventory">累計進料<i class="sort-icon">↕</i></th>
+          <th class="sortable" data-col="out" data-tbl="inventory">累計領料<i class="sort-icon">↕</i></th>
+          <th class="sortable" data-col="stock" data-tbl="inventory">現有庫存<i class="sort-icon">↕</i></th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-inventory"></tbody>
+    </table>
+  </div>
       <div id="inv-pg"></div>
     </div>
 
