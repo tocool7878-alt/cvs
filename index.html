@@ -408,21 +408,21 @@
 
 <button class="scroll-top" id="scroll-top-btn" onclick="document.querySelector('.main').scrollTo({top:0,behavior:'smooth'})" title="回到頂部"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
 <div class="toast" id="toast"></div>
-
+<!-- 先載入設定與資料 -->
 <script src="config.js"></script>
 <script src="store/cache.js"></script>
-
+<!-- 再載入工具函式 -->
 <script src="lib/api.js"></script>
 <script src="lib/utils.js"></script>
 <script src="lib/searchable-select.js"></script>
 <script src="lib/pagination.js"></script>
-
+<!-- 再載入各分頁邏輯 (注意 inventory.js 必須在 app.js 前面) -->
 <script src="pages/inventory.js"></script>
 <script src="pages/inbound.js"></script>
 <script src="pages/outbound.js"></script>
 <script src="pages/dashboard.js"></script>
 <script src="pages/settings.js"></script>
-
+<!-- 最後載入主程式 app.js -->
 <script src="app.js"></script>
 
 </body>
