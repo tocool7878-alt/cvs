@@ -14,8 +14,8 @@ function renderOutbound() {
 
   tb.innerHTML = pagedRows(rows, 'outbound').map(r => {
     const loc = r.location + (r.location_note ? '（' + r.location_note + '）' : '');
-    // 計算領料完成當下的結存庫存
-    const curStock = calcStockAtTime(r.item_id, r.item_type, r.time, r.id);
+    // 改回抓該品項當前即時庫存
+    const curStock = calcStock(r.item_id, r.item_type).stock;
     return `<tr>
       <td class="mono">${r.id}</td>
       <td class="mono">${fmtTime(r.time)}</td>
