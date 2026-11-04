@@ -175,22 +175,23 @@ const core = document.getElementById('wire-core')?.value || '雙';
   }, 'wire');
 }
 // 3. 開啟線材 Modal（移除品牌欄位帶值）
-function openWireModal(editId=null) {
+async function openWireModal(editId = null) {
   document.getElementById('wire-eid').value = editId || ''; 
   document.getElementById('mwire-title').textContent = editId ? '修改線材品項' : '新增線材品項';
 
-  if(editId) {
-    const w = C.wires.find(x => x.id === editId); if(!w) return;
+  if (editId) {
+    const w = C.wires.find(x => x.id === editId);
+    if (!w) return;
     document.getElementById('wire-id').value = w.id;
     document.getElementById('wire-core').value = w.core_type || '雙';
     document.getElementById('wire-conn-a').value = w.conn_a;
-    document.getElementById('wire-apc-a').checked = w.conn_a_apc;
+    document.getElementById('wire-apc-a').checked = !!w.conn_a_apc;
     document.getElementById('wire-conn-b').value = w.conn_b;
-    document.getElementById('wire-apc-b').checked = w.conn_b_apc;
+    document.getElementById('wire-apc-b').checked = !!w.conn_b_apc;
     document.getElementById('wire-init').value = w.init_stock;
     
     const stdLens = ['1M','2M','3M','5M','6M','8M','10M','12M','15M','20M'];
-    if(stdLens.includes(w.length)) {
+    if (stdLens.includes(w.length)) {
       document.getElementById('wire-length').value = w.length;
       document.getElementById('wire-length-custom').style.display = 'none';
     } else {
@@ -199,7 +200,16 @@ function openWireModal(editId=null) {
       document.getElementById('wire-length-custom').value = w.length;
     }
   } else {
-    document.getElementById('wire-id').value = nextId(C.wires, 'W');
+    // 新增時：查詢資料庫中所有的編號（包含被刪除的），避免 pkey 衝突
+    let nextWireId = 'W001';
+    try {
+      const allWires = await dbGet('wire_items', '?select=id');
+      nextWireId = nextId(allWires, 'W');
+    } catch(err) {
+      nextWireId = nextId(C.wires, 'W');
+    }
+
+    document.getElementById('wire-id').value = nextWireId;
     document.getElementById('wire-core').value = '雙';
     document.getElementById('wire-conn-a').value = 'LC';
     document.getElementById('wire-apc-a').checked = false;
@@ -210,6 +220,7 @@ function openWireModal(editId=null) {
     document.getElementById('wire-length-custom').value = '';
     document.getElementById('wire-init').value = '0';
   }
+
   updateWirePreview();
   _openModal('modal-wire');
 }
