@@ -1,3 +1,4 @@
+// === 頁面切換控制 ===
 function goPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
@@ -5,7 +6,11 @@ function goPage(name) {
   ['inventory','inbound','outbound','dashboard','settings'].forEach((n, i) => {
     if(n === name) document.querySelectorAll('.nav-tab')[i].classList.add('active');
   });
-  if(name === 'inventory') renderInventory();
+
+  if(name === 'inventory') {
+    if (typeof updateInvItemSelect === 'function') updateInvItemSelect();
+    renderInventory();
+  }
   else if(name === 'inbound') renderInbound();
   else if(name === 'outbound') renderOutbound();
   else if(name === 'dashboard') { populateDashFilters(); renderDashboard(); }
@@ -20,16 +25,33 @@ function switchSettingTab(tab) {
     el.classList.toggle('active', tabs[i] === tab);
   });
 }
+// === 分類按鈕切換控制 ===
 function setFilter(scope, val, el) {
   F[scope] = val;
   const pgKey = { inv: 'inv', in: 'inbound', out: 'outbound' }[scope];
   if (pgKey) PG[pgKey] = 1;
 
-  // 取得當前被點擊按鈕所在的那個 toggle-group，將裡面的 active 全數清空
+  // 取得所屬的 toggle-group 並切換 active 樣式
   const group = el.closest('.toggle-group');
   if (group) {
     group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
   }
+  el.classList.add('active');
+
+  // 若切換庫存篩選，連動更新品項選單
+  if (scope === 'inv') {
+    const itemSel = document.getElementById('inv-item-filter');
+    if (itemSel) itemSel.value = ''; // 切換大類時重設品項值
+    if (typeof updateInvItemSelect === 'function') {
+      updateInvItemSelect();
+    }
+    renderInventory();
+  } else if (scope === 'in') {
+    renderInbound();
+  } else {
+    renderOutbound();
+  }
+}
   
   // 加上被點擊按鈕的 active
   el.classList.add('active');
