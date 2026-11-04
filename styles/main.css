@@ -123,7 +123,8 @@ textarea{resize:vertical;min-height:60px}
 .filter-group{display:flex;flex-direction:column;gap:3px;min-width:90px;flex:1}
 .filter-label{font-family:var(--mono);font-size:9.5px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase}
 .clickable-row{cursor:pointer}.clickable-row:hover td{background:rgba(79,142,247,.06)!important}
-.detail-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.detail-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+@media(max-width:600px){.detail-stats{grid-template-columns:1fr 1fr}}
 .detail-stat{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
 .detail-stat-label{font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em}
 .detail-stat-val{font-family:var(--mono);font-size:20px;font-weight:600}
