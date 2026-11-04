@@ -1,21 +1,19 @@
 function renderOutbound() {
-  const kw = (document.getElementById('out-search')?.value || '');
+  const kw = (document.getElementById('out-search')?.value||'');
   let rows = C.outbound.filter(r => {
-    if (F.out !== 'all' && r.item_type !== F.out) return false;
-    if (kw && !fuzzyMatchAny(kw, r.item_name, r.id, r.person, r.purpose, r.location, r.note)) return false;
+    if(F.out !== 'all' && r.item_type !== F.out) return false;
+    if(kw && !fuzzyMatchAny(kw, r.item_name, r.id, r.person, r.purpose, r.location, r.note)) return false;
     return true;
   });
   rows = sortData(rows, S.outbound.col, S.outbound.dir);
   const tb = document.getElementById('tbl-outbound');
-  if (!rows.length) { tb.innerHTML = '<tr><td colspan="12" class="empty">無資料</td></tr>'; document.getElementById('out-pg').innerHTML = ''; return; }
+  if(!rows.length) { tb.innerHTML = '<tr><td colspan="11" class="empty">無資料</td></tr>'; document.getElementById('out-pg').innerHTML=''; return; }
 
   const badgeMap = { wire: 'badge-wire', equip: 'badge-equip', power: 'badge-warn' };
   const labelMap = { wire: '線材', equip: '設備', power: '電力' };
 
   tb.innerHTML = pagedRows(rows, 'outbound').map(r => {
-    const loc = r.location + (r.location_note ? '（' + r.location_note + '）' : '');
-    // 改回抓該品項當前即時庫存
-    const curStock = calcStock(r.item_id, r.item_type).stock;
+    const loc = r.location + (r.location_note ? '（'+r.location_note+'）' : '');
     return `<tr>
       <td class="mono">${r.id}</td>
       <td class="mono">${fmtTime(r.time)}</td>
@@ -23,15 +21,11 @@ function renderOutbound() {
       <td>${getItemFullName(getItemInfo(r.item_id, r.item_type), r.item_type) || r.item_name}</td>
       <td>${r.unit}</td>
       <td class="mono" style="color:var(--danger)">${r.qty}</td>
-      <td class="mono" style="font-weight:600;color:var(--accent)">${curStock}</td>
       <td>${r.person}</td>
       <td>${loc}</td>
       <td><span class="badge badge-out">${r.purpose}</span></td>
-      <td style="color:var(--text2)">${r.note || '—'}</td>
-      <td><div class="td-actions">
-        <button class="btn btn-warn btn-xs" onclick="openOutboundModal('${r.id}')">修改</button>
-        <button class="btn btn-danger btn-xs" onclick="softDelOutbound('${r.id}')">刪除</button>
-      </div></td>
+      <td style="color:var(--text2)">${r.note||'—'}</td>
+      <td><div class="td-actions"><button class="btn btn-warn btn-xs" onclick="openOutboundModal('${r.id}')">修改</button><button class="btn btn-danger btn-xs" onclick="softDelOutbound('${r.id}')">刪除</button></div></td>
     </tr>`;
   }).join('');
   renderPagination('out-pg', rows.length, 'outbound', renderOutbound);
