@@ -101,4 +101,20 @@ function setModalType(scope, type) {
   let itemList = [];
   if (isWire) {
     let items = scope === 'out' ? (C.wires || []).filter(w => calcStock(w.id, 'wire').stock > 0) : (C.wires || []);
-    items = [...items].sort((a, b) => getItemFullName(a, 'wire').localeCompare(getItemFullName(b,
+    items = [...items].sort((a, b) => getItemFullName(a, 'wire').localeCompare(getItemFullName(b, 'wire')));
+    itemList = items.map(w => {
+      const st = scope === 'out' ? ` (庫存:${calcStock(w.id, 'wire').stock})` : '';
+      return { value: w.id, label: getItemFullName(w, 'wire') + st };
+    });
+  } else if (isEquip) {
+    let items = scope === 'out' ? (C.equips || []).filter(e => calcStock(e.id, 'equip').stock > 0) : (C.equips || []);
+    items = [...items].sort((a, b) => getItemFullName(a, 'equip').localeCompare(getItemFullName(b, 'equip')));
+    itemList = items.map(e => {
+      const st = scope === 'out' ? ` (庫存:${calcStock(e.id, 'equip').stock})` : '';
+      return { value: e.id, label: getItemFullName(e, 'equip') + st };
+    });
+  } else if (isPower) {
+    let items = scope === 'out' ? (C.powers || []).filter(p => calcStock(p.id, 'power').stock > 0) : (C.powers || []);
+    items = [...items].sort((a, b) => getItemFullName(a, 'power').localeCompare(getItemFullName(b, 'power')));
+    itemList = items.map(p => {
+      const st = scope === 'out'
