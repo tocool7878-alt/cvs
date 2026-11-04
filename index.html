@@ -72,20 +72,26 @@
       <div id="inv-pg"></div>
     </div>
 
+    <!-- === 進料作業區塊 === -->
     <div class="page" id="page-inbound">
-      <div class="sec-hd">
-        <span class="sec-title">進料作業</span>
-        <div class="sec-actions">
-          <div class="search-wrap">
-            <input class="search-input" type="text" placeholder="關鍵字搜尋..." oninput="PG.inbound=1;renderInbound()" id="in-search">
-          </div>
+      <div class="sec-hd" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <!-- 左側：標題 + 分類切換按鈕群組 -->
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span class="sec-title" style="margin-right:4px">進料作業</span>
           <div class="toggle-group">
             <button class="toggle-btn active" onclick="setFilter('in','all',this)">全部</button>
             <button class="toggle-btn" onclick="setFilter('in','wire',this)">線材</button>
             <button class="toggle-btn" onclick="setFilter('in','equip',this)">設備</button>
             <button class="toggle-btn" onclick="setFilter('in','power',this)">電力</button>
           </div>
-          <button class="btn btn-success" onclick="openInboundModal()">＋ 新增進料</button>
+        </div>
+
+        <!-- 右側：新增按鈕 + 搜尋框 -->
+        <div class="sec-actions" style="margin-left:auto;display:flex;align-items:center;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="openInboundModal()">＋ 新增進料</button>
+          <div class="search-wrap">
+            <input class="search-input" type="text" placeholder="關鍵字搜尋..." oninput="PG.inbound=1;renderInbound()" id="in-search">
+          </div>
         </div>
       </div>
       <div class="tbl-wrap"><table>
@@ -103,23 +109,29 @@
       <div id="in-pg"></div>
     </div>
 
+    <!-- === 領料作業區塊 === -->
     <div class="page" id="page-outbound">
-      <div class="sec-hd">
-        <span class="sec-title">領料作業</span>
-        <div class="sec-actions">
-          <div class="search-wrap">
-            <input class="search-input" type="text" placeholder="關鍵字搜尋..." oninput="PG.outbound=1;renderOutbound()" id="out-search">
-          </div>
+      <div class="sec-hd" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <!-- 左側：標題 + 分類切換按鈕群組 -->
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span class="sec-title" style="margin-right:4px">領料作業</span>
           <div class="toggle-group">
             <button class="toggle-btn active" onclick="setFilter('out','all',this)">全部</button>
             <button class="toggle-btn" onclick="setFilter('out','wire',this)">線材</button>
             <button class="toggle-btn" onclick="setFilter('out','equip',this)">設備</button>
             <button class="toggle-btn" onclick="setFilter('out','power',this)">電力</button>
           </div>
-          <button class="btn btn-danger" onclick="openOutboundModal()">－ 新增領料</button>
+        </div>
+
+        <!-- 右側：新增按鈕 + 搜尋框 -->
+        <div class="sec-actions" style="margin-left:auto;display:flex;align-items:center;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="openOutboundModal()">＋ 新增領料</button>
+          <div class="search-wrap">
+            <input class="search-input" type="text" placeholder="關鍵字搜尋..." oninput="PG.outbound=1;renderOutbound()" id="out-search">
+          </div>
         </div>
       </div>
-<div class="tbl-wrap"><table>
+    <div class="tbl-wrap"><table>
         <thead><tr>
           <th class="sortable" data-col="id" data-tbl="outbound">領料編號<i class="sort-icon">↕</i></th>
           <th class="sortable" data-col="time" data-tbl="outbound">時間<i class="sort-icon">↕</i></th>
