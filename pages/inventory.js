@@ -7,13 +7,45 @@ function changeInvSort() {
   renderInventory();
 }
 
+// 根據當前選擇的類型更新品項下拉選單顯示與內容
+function updateInvItemSelect() {
+  const sel = document.getElementById('inv-item-filter');
+  if (!sel) return;
+
+  if (F.inv === 'all') {
+    sel.style.display = 'none';
+    sel.value = '';
+    return;
+  }
+
+  // 顯示下拉選單
+  sel.style.display = '';
+
+  let items = [];
+  if (F.inv === 'wire') {
+    items = C.wires.map(w => ({ id: w.id, name: getItemFullName(w, 'wire') }));
+  } else if (F.inv === 'equip') {
+    items = C.equips.map(e => ({ id: e.id, name: getItemFullName(e, 'equip') }));
+  } else if (F.inv === 'power') {
+    items = C.powers.map(p => ({ id: p.id, name: getItemFullName(p, 'power') }));
+  }
+
+  // 依名稱筆劃排序
+  items.sort((a, b) => a.name.localeCompare(b.name, 'zh-TW'));
+
+  const curVal = sel.value;
+  sel.innerHTML = '<option value="">全部品項</option>' + items.map(i => `<option value="${i.id}" ${i.id === curVal ? 'selected' : ''}>${i.name}</option>`).join('');
+}
+
 function renderInventory() {
   const kw = (document.getElementById('inv-search')?.value || '');
+  const selItemId = document.getElementById('inv-item-filter')?.value || '';
   let rows = [];
 
   // 線材
   if (F.inv === 'all' || F.inv === 'wire') {
     C.wires.forEach(w => {
+      if (selItemId && w.id !== selItemId) return;
       const st = calcStock(w.id, 'wire');
       if (st.stock <= 0 && st.in === 0 && st.out === 0 && st.init === 0) return;
       const name = getItemFullName(w, 'wire');
@@ -25,6 +57,7 @@ function renderInventory() {
   // 一般設備
   if (F.inv === 'all' || F.inv === 'equip') {
     C.equips.forEach(e => {
+      if (selItemId && e.id !== selItemId) return;
       const st = calcStock(e.id, 'equip');
       if (st.stock <= 0 && st.in === 0 && st.out === 0 && st.init === 0) return;
       const name = getItemFullName(e, 'equip');
@@ -36,6 +69,7 @@ function renderInventory() {
   // 電力設備
   if (F.inv === 'all' || F.inv === 'power') {
     C.powers.forEach(p => {
+      if (selItemId && p.id !== selItemId) return;
       const st = calcStock(p.id, 'power');
       if (st.stock <= 0 && st.in === 0 && st.out === 0 && st.init === 0) return;
       const name = getItemFullName(p, 'power');
@@ -87,25 +121,12 @@ function openDetail(itemId, itemType) {
   const inRecs = C.inbound.filter(r => r.item_id === itemId && r.item_type === itemType);
   const outRecs = C.outbound.filter(r => r.item_id === itemId && r.item_type === itemType);
 
-  // 調整明細卡片順序：初始庫存、累計進料、累計領料、現有庫存
   let html = `
     <div class="detail-stats">
-      <div class="detail-stat">
-        <div class="detail-stat-label">初始庫存</div>
-        <div class="detail-stat-val" style="color:var(--text2)">${st.init}</div>
-      </div>
-      <div class="detail-stat">
-        <div class="detail-stat-label">累計進料</div>
-        <div class="detail-stat-val ds-in">${st.in}</div>
-      </div>
-      <div class="detail-stat">
-        <div class="detail-stat-label">累計領料</div>
-        <div class="detail-stat-val ds-out">${st.out}</div>
-      </div>
-      <div class="detail-stat">
-        <div class="detail-stat-label">現有庫存</div>
-        <div class="detail-stat-val ds-stock">${st.stock}</div>
-      </div>
+      <div class="detail-stat"><div class="detail-stat-label">初始庫存</div><div class="detail-stat-val" style="color:var(--text2)">${st.init}</div></div>
+      <div class="detail-stat"><div class="detail-stat-label">累計進料</div><div class="detail-stat-val ds-in">${st.in}</div></div>
+      <div class="detail-stat"><div class="detail-stat-label">累計領料</div><div class="detail-stat-val ds-out">${st.out}</div></div>
+      <div class="detail-stat"><div class="detail-stat-label">現有庫存</div><div class="detail-stat-val ds-stock">${st.stock}</div></div>
     </div>`;
 
   if (inRecs.length) {
