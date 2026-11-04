@@ -45,12 +45,13 @@
       </div>
       <div class="tbl-wrap">
     <table>
-      <thead>
+<thead>
         <tr>
           <th class="sortable" data-col="id" data-tbl="inventory">品項編號<i class="sort-icon">↕</i></th>
           <th>類型</th>
           <th class="sortable" data-col="name" data-tbl="inventory">品項規格<i class="sort-icon">↕</i></th>
           <th>單位</th>
+          <th class="sortable" data-col="init" data-tbl="inventory">初始庫存<i class="sort-icon">↕</i></th>
           <th class="sortable" data-col="in" data-tbl="inventory">累計進料<i class="sort-icon">↕</i></th>
           <th class="sortable" data-col="out" data-tbl="inventory">累計領料<i class="sort-icon">↕</i></th>
           <th class="sortable" data-col="stock" data-tbl="inventory">現有庫存<i class="sort-icon">↕</i></th>
@@ -81,11 +82,14 @@
       </div>
       <div class="tbl-wrap"><table>
         <thead><tr>
-          <th class="sortable" data-col="id" data-tbl="inbound">進料編號<i class="sort-icon">↕</i></th>
-          <th class="sortable" data-col="time" data-tbl="inbound">時間<i class="sort-icon">↕</i></th>
-          <th>類型</th><th class="sortable" data-col="item_name" data-tbl="inbound">品項規格<i class="sort-icon">↕</i></th>
-          <th>單位</th><th class="sortable" data-col="qty" data-tbl="inbound">進料數量<i class="sort-icon">↕</i></th>
-          <th>經手人</th><th>備註</th><th>操作</th>
+        <th class="sortable" data-col="id" data-tbl="inbound">進料編號<i class="sort-icon">↕</i></th>
+        <th class="sortable" data-col="time" data-tbl="inbound">時間<i class="sort-icon">↕</i></th>
+        <th>類型</th>
+        <th class="sortable" data-col="item_name" data-tbl="inbound">品項規格<i class="sort-icon">↕</i></th>
+        <th>單位</th>
+        <th class="sortable" data-col="qty" data-tbl="inbound">進料數量<i class="sort-icon">↕</i></th>
+        <th>現有庫存</th>
+        <th>經手人</th><th>備註</th><th>操作</th>
         </tr></thead>
         <tbody id="tbl-inbound"></tbody>
       </table></div>
@@ -99,23 +103,26 @@
           <div class="search-wrap">
             <input class="search-input" type="text" placeholder="關鍵字搜尋..." oninput="PG.outbound=1;renderOutbound()" id="out-search">
           </div>
-<div class="toggle-group">
-  <button class="toggle-btn active" onclick="setFilter('out','all',this)">全部</button>
-  <button class="toggle-btn" onclick="setFilter('out','wire',this)">線材</button>
-  <button class="toggle-btn" onclick="setFilter('out','equip',this)">設備</button>
-  <button class="toggle-btn" onclick="setFilter('out','power',this)">電力</button>
-</div>
+          <div class="toggle-group">
+            <button class="toggle-btn active" onclick="setFilter('out','all',this)">全部</button>
+            <button class="toggle-btn" onclick="setFilter('out','wire',this)">線材</button>
+            <button class="toggle-btn" onclick="setFilter('out','equip',this)">設備</button>
+            <button class="toggle-btn" onclick="setFilter('out','power',this)">電力</button>
+          </div>
           <button class="btn btn-danger" onclick="openOutboundModal()">－ 新增領料</button>
         </div>
       </div>
       <div class="tbl-wrap"><table>
         <thead><tr>
-          <th class="sortable" data-col="id" data-tbl="outbound">領料編號<i class="sort-icon">↕</i></th>
-          <th class="sortable" data-col="time" data-tbl="outbound">時間<i class="sort-icon">↕</i></th>
-          <th>類型</th><th class="sortable" data-col="item_name" data-tbl="outbound">品項規格<i class="sort-icon">↕</i></th>
-          <th>單位</th><th class="sortable" data-col="qty" data-tbl="outbound">領料數量<i class="sort-icon">↕</i></th>
-          <th>領料人</th><th>使用地點</th><th>用途</th><th>備註</th><th>操作</th>
-        </tr></thead>
+              <th class="sortable" data-col="id" data-tbl="outbound">領料編號<i class="sort-icon">↕</i></th>
+              <th class="sortable" data-col="time" data-tbl="outbound">時間<i class="sort-icon">↕</i></th>
+              <th>類型</th>
+              <th class="sortable" data-col="item_name" data-tbl="outbound">品項規格<i class="sort-icon">↕</i></th>
+              <th>單位</th>
+              <th class="sortable" data-col="qty" data-tbl="outbound">領料數量<i class="sort-icon">↕</i></th>
+              <th>現有庫存</th>
+              <th>領料人</th><th>使用地點</th><th>用途</th><th>備註</th><th>操作</th>
+          </tr></thead>
         <tbody id="tbl-outbound"></tbody>
       </table></div>
       <div id="out-pg"></div>
