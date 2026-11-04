@@ -20,18 +20,26 @@
     </div>
   </nav>
   <div class="main">
-    
-    <div class="page active" id="page-inventory">
-      <div class="sec-hd">
-        <span class="sec-title">庫存總表</span>
-        <div class="sec-actions">
-        <div class="toggle-group">
-          <button class="toggle-btn active" onclick="setFilter('inv','all',this)">全部</button>
-          <button class="toggle-btn" onclick="setFilter('inv','wire',this)">線材</button>
-          <button class="toggle-btn" onclick="setFilter('inv','equip',this)">設備</button>
-          <button class="toggle-btn" onclick="setFilter('inv','power',this)">電力</button>
+  <div class="page active" id="page-inventory">
+      <div class="sec-hd" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <!-- 左側：標題 + 類型按鈕群組 + 連動品項下拉選單 -->
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span class="sec-title" style="margin-right:4px">庫存總表</span>
+          <div class="toggle-group">
+            <button class="toggle-btn active" onclick="setFilter('inv','all',this)">全部</button>
+            <button class="toggle-btn" onclick="setFilter('inv','wire',this)">線材</button>
+            <button class="toggle-btn" onclick="setFilter('inv','equip',this)">設備</button>
+            <button class="toggle-btn" onclick="setFilter('inv','power',this)">電力</button>
+          </div>
+          <!-- 類型連動品項選單（預設全部時隱藏） -->
+          <select id="inv-item-filter" onchange="PG.inv=1;renderInventory()" style="display:none;width:auto;min-width:180px;padding:7px 10px 7px 12px">
+            <option value="">全部品項</option>
+          </select>
         </div>
-          <select id="inv-sort" onchange="changeInvSort()" style="width:auto;padding:7px 10px 7px 12px;margin-right:4px">
+
+        <!-- 右側：排序選單 + 搜尋框 -->
+        <div class="sec-actions" style="margin-left:auto">
+          <select id="inv-sort" onchange="changeInvSort()" style="width:auto;padding:7px 10px 7px 12px">
             <option value="id_asc">編號 (舊→新)</option>
             <option value="id_desc">編號 (新→舊)</option>
             <option value="name_asc">品項規格 (A→Z)</option>
