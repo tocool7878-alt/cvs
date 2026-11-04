@@ -1,19 +1,36 @@
 function renderInbound() {
-  const kw = (document.getElementById('in-search')?.value||'');
+  const kw = (document.getElementById('in-search')?.value || '');
   let rows = C.inbound.filter(r => {
-    if(F.in !== 'all' && r.item_type !== F.in) return false;
-    if(kw && !fuzzyMatchAny(kw, r.item_name, r.id, r.person, r.note)) return false;
+    if (F.in !== 'all' && r.item_type !== F.in) return false;
+    if (kw && !fuzzyMatchAny(kw, r.item_name, r.id, r.person, r.note)) return false;
     return true;
   });
   rows = sortData(rows, S.inbound.col, S.inbound.dir);
   const tb = document.getElementById('tbl-inbound');
-  if(!rows.length) { tb.innerHTML = '<tr><td colspan="9" class="empty">無資料</td></tr>'; document.getElementById('in-pg').innerHTML=''; return; }
-  tb.innerHTML = pagedRows(rows, 'inbound').map(r => `<tr>
-    <td class="mono">${r.id}</td><td class="mono">${fmtTime(r.time)}</td>
-    <td><span class="badge ${r.item_type==='wire'?'badge-wire':(r.item_type==='power'?'badge-warn':'badge-equip')}">${r.item_type==='wire'?'線材':(r.item_type==='power'?'電力':'設備')}</span></td>
-    <td>${getItemFullName(getItemInfo(r.item_id, r.item_type), r.item_type) || r.item_name}</td><td>${r.unit}</td>
-    <td class="mono" style="color:var(--accent2)">${r.qty}</td><td>${r.person}</td><td style="color:var(--text2)">${r.note||'—'}</td>
-    <td><div class="td-actions"><button class="btn btn-warn btn-xs" onclick="openInboundModal('${r.id}')">修改</button><button class="btn btn-danger btn-xs" onclick="softDelInbound('${r.id}')">刪除</button></div></td></tr>`).join('');
+  if (!rows.length) { tb.innerHTML = '<tr><td colspan="10" class="empty">無資料</td></tr>'; document.getElementById('in-pg').innerHTML = ''; return; }
+
+  const badgeMap = { wire: 'badge-wire', equip: 'badge-equip', power: 'badge-warn' };
+  const labelMap = { wire: '線材', equip: '設備', power: '電力' };
+
+  tb.innerHTML = pagedRows(rows, 'inbound').map(r => {
+    // 即時計算此品項的目前庫存
+    const curStock = calcStock(r.item_id, r.item_type).stock;
+    return `<tr>
+      <td class="mono">${r.id}</td>
+      <td class="mono">${fmtTime(r.time)}</td>
+      <td><span class="badge ${badgeMap[r.item_type] || 'badge-equip'}">${labelMap[r.item_type] || '設備'}</span></td>
+      <td>${getItemFullName(getItemInfo(r.item_id, r.item_type), r.item_type) || r.item_name}</td>
+      <td>${r.unit}</td>
+      <td class="mono" style="color:var(--accent2)">${r.qty}</td>
+      <td class="mono" style="font-weight:600;color:var(--accent)">${curStock}</td>
+      <td>${r.person}</td>
+      <td style="color:var(--text2)">${r.note || '—'}</td>
+      <td><div class="td-actions">
+        <button class="btn btn-warn btn-xs" onclick="openInboundModal('${r.id}')">修改</button>
+        <button class="btn btn-danger btn-xs" onclick="softDelInbound('${r.id}')">刪除</button>
+      </div></td>
+    </tr>`;
+  }).join('');
   renderPagination('in-pg', rows.length, 'inbound', renderInbound);
 }
 function openInboundModal(editId=null) {
