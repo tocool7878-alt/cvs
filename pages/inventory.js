@@ -15,10 +15,10 @@ function renderInventory() {
   if (F.inv === 'all' || F.inv === 'wire') {
     C.wires.forEach(w => {
       const st = calcStock(w.id, 'wire');
-      if (st.stock <= 0 && st.in === 0 && st.out === 0) return;
+      if (st.stock <= 0 && st.in === 0 && st.out === 0 && st.init === 0) return;
       const name = getItemFullName(w, 'wire');
       if (kw && !fuzzyMatchAny(kw, name, w.id)) return;
-      rows.push({ id: w.id, type: 'wire', name, unit: w.unit, in: st.in, out: st.out, stock: st.stock });
+      rows.push({ id: w.id, type: 'wire', name, unit: w.unit, init: st.init, in: st.in, out: st.out, stock: st.stock });
     });
   }
 
@@ -26,10 +26,10 @@ function renderInventory() {
   if (F.inv === 'all' || F.inv === 'equip') {
     C.equips.forEach(e => {
       const st = calcStock(e.id, 'equip');
-      if (st.stock <= 0 && st.in === 0 && st.out === 0) return;
+      if (st.stock <= 0 && st.in === 0 && st.out === 0 && st.init === 0) return;
       const name = getItemFullName(e, 'equip');
       if (kw && !fuzzyMatchAny(kw, name, e.id)) return;
-      rows.push({ id: e.id, type: 'equip', name, unit: e.unit, in: st.in, out: st.out, stock: st.stock });
+      rows.push({ id: e.id, type: 'equip', name, unit: e.unit, init: st.init, in: st.in, out: st.out, stock: st.stock });
     });
   }
 
@@ -37,10 +37,10 @@ function renderInventory() {
   if (F.inv === 'all' || F.inv === 'power') {
     C.powers.forEach(p => {
       const st = calcStock(p.id, 'power');
-      if (st.stock <= 0 && st.in === 0 && st.out === 0) return;
+      if (st.stock <= 0 && st.in === 0 && st.out === 0 && st.init === 0) return;
       const name = getItemFullName(p, 'power');
       if (kw && !fuzzyMatchAny(kw, name, p.id)) return;
-      rows.push({ id: p.id, type: 'power', name, unit: p.unit, in: st.in, out: st.out, stock: st.stock });
+      rows.push({ id: p.id, type: 'power', name, unit: p.unit, init: st.init, in: st.in, out: st.out, stock: st.stock });
     });
   }
 
@@ -49,7 +49,7 @@ function renderInventory() {
   if (!tb) return;
 
   if (!rows.length) {
-    tb.innerHTML = '<tr><td colspan="8" class="empty">無庫存資料</td></tr>';
+    tb.innerHTML = '<tr><td colspan="9" class="empty">無庫存資料</td></tr>';
     document.getElementById('inv-pg').innerHTML = '';
     return;
   }
@@ -63,6 +63,7 @@ function renderInventory() {
       <td><span class="badge ${badgeMap[r.type] || 'badge-equip'}">${labelMap[r.type] || '設備'}</span></td>
       <td>${r.name}</td>
       <td>${r.unit}</td>
+      <td class="mono" style="color:var(--text2)">${r.init}</td>
       <td class="mono" style="color:var(--accent2)">${r.in}</td>
       <td class="mono" style="color:var(--danger)">${r.out}</td>
       <td class="mono" style="font-weight:600;color:var(--accent)">${r.stock}</td>
@@ -86,11 +87,25 @@ function openDetail(itemId, itemType) {
   const inRecs = C.inbound.filter(r => r.item_id === itemId && r.item_type === itemType);
   const outRecs = C.outbound.filter(r => r.item_id === itemId && r.item_type === itemType);
 
+  // 調整明細卡片順序：初始庫存、累計進料、累計領料、現有庫存
   let html = `
     <div class="detail-stats">
-      <div class="detail-stat"><div class="detail-stat-label">現有庫存</div><div class="detail-stat-val ds-stock">${st.stock}</div></div>
-      <div class="detail-stat"><div class="detail-stat-label">累計進料</div><div class="detail-stat-val ds-in">${st.in}</div></div>
-      <div class="detail-stat"><div class="detail-stat-label">累計領料</div><div class="detail-stat-val ds-out">${st.out}</div></div>
+      <div class="detail-stat">
+        <div class="detail-stat-label">初始庫存</div>
+        <div class="detail-stat-val" style="color:var(--text2)">${st.init}</div>
+      </div>
+      <div class="detail-stat">
+        <div class="detail-stat-label">累計進料</div>
+        <div class="detail-stat-val ds-in">${st.in}</div>
+      </div>
+      <div class="detail-stat">
+        <div class="detail-stat-label">累計領料</div>
+        <div class="detail-stat-val ds-out">${st.out}</div>
+      </div>
+      <div class="detail-stat">
+        <div class="detail-stat-label">現有庫存</div>
+        <div class="detail-stat-val ds-stock">${st.stock}</div>
+      </div>
     </div>`;
 
   if (inRecs.length) {
