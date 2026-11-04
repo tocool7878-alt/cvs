@@ -1,15 +1,13 @@
-// ==================== APP 主程式與事件控制 ====================
+// ==================== APP 控制器 ====================
 
-// 頁面導航切換
 function goPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  const targetPage = document.getElementById('page-' + name);
-  if (targetPage) targetPage.classList.add('active');
-  
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  ['inventory', 'inbound', 'outbound', 'dashboard', 'settings'].forEach((n, i) => {
-    const tabs = document.querySelectorAll('.nav-tab');
-    if (n === name && tabs[i]) tabs[i].classList.add('active');
+  const target = document.getElementById('page-' + name);
+  if (target) target.classList.add('active');
+
+  const navs = ['inventory', 'inbound', 'outbound', 'dashboard', 'settings'];
+  document.querySelectorAll('.nav-tab').forEach((t, i) => {
+    t.classList.toggle('active', navs[i] === name);
   });
 
   if (name === 'inventory') {
@@ -27,7 +25,6 @@ function goPage(name) {
   }
 }
 
-// 系統設定頁籤切換
 function switchSettingTab(tab) {
   const tabs = ['wire', 'equip', 'power', 'persons', 'purposes', 'locations', 'brands'];
   tabs.forEach(t => {
@@ -39,16 +36,13 @@ function switchSettingTab(tab) {
   });
 }
 
-// 分類過濾按鈕切換
 function setFilter(scope, val, el) {
   F[scope] = val;
   const pgKey = { inv: 'inv', in: 'inbound', out: 'outbound' }[scope];
   if (pgKey) PG[pgKey] = 1;
 
   const group = el.closest('.toggle-group');
-  if (group) {
-    group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
-  }
+  if (group) group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
 
   if (scope === 'inv') {
@@ -63,7 +57,6 @@ function setFilter(scope, val, el) {
   }
 }
 
-// 彈窗控制
 function closeModal(id) {
   const m = document.getElementById(id);
   if (m) m.classList.remove('open');
@@ -79,12 +72,9 @@ function _openModal(id) {
   }, 80);
 }
 
-// 進領料彈窗：切換線材 / 設備 / 電力
 function setModalType(scope, type) {
   MT[scope] = type;
-  const isWire = type === 'wire';
-  const isEquip = type === 'equip';
-  const isPower = type === 'power';
+  const isWire = type === 'wire', isEquip = type === 'equip', isPower = type === 'power';
 
   const btnW = document.getElementById(scope + '-twire');
   const btnE = document.getElementById(scope + '-tequip');
@@ -94,27 +84,147 @@ function setModalType(scope, type) {
   if (btnP) btnP.className = 'btn btn-sm ' + (isPower ? 'btn-warn' : 'btn-ghost');
 
   const lbl = document.getElementById(scope + '-item-lbl');
-  if (lbl) {
-    lbl.textContent = isWire ? '線材規格 *' : (isPower ? '電力設備規格 *' : '設備品項 *');
-  }
+  if (lbl) lbl.textContent = isWire ? '線材規格 *' : (isPower ? '電力設備規格 *' : '設備品項 *');
 
-  let itemList = [];
+  let list = [];
   if (isWire) {
     let items = scope === 'out' ? (C.wires || []).filter(w => calcStock(w.id, 'wire').stock > 0) : (C.wires || []);
-    items = [...items].sort((a, b) => getItemFullName(a, 'wire').localeCompare(getItemFullName(b, 'wire')));
-    itemList = items.map(w => {
-      const st = scope === 'out' ? ` (庫存:${calcStock(w.id, 'wire').stock})` : '';
-      return { value: w.id, label: getItemFullName(w, 'wire') + st };
-    });
+    list = [...items].sort((a, b) => getItemFullName(a, 'wire').localeCompare(getItemFullName(b, 'wire')))
+      .map(w => ({ value: w.id, label: getItemFullName(w, 'wire') + (scope === 'out' ? ` (庫存:${calcStock(w.id, 'wire').stock})` : '') }));
   } else if (isEquip) {
     let items = scope === 'out' ? (C.equips || []).filter(e => calcStock(e.id, 'equip').stock > 0) : (C.equips || []);
-    items = [...items].sort((a, b) => getItemFullName(a, 'equip').localeCompare(getItemFullName(b, 'equip')));
-    itemList = items.map(e => {
-      const st = scope === 'out' ? ` (庫存:${calcStock(e.id, 'equip').stock})` : '';
-      return { value: e.id, label: getItemFullName(e, 'equip') + st };
-    });
+    list = [...items].sort((a, b) => getItemFullName(a, 'equip').localeCompare(getItemFullName(b, 'equip')))
+      .map(e => ({ value: e.id, label: getItemFullName(e, 'equip') + (scope === 'out' ? ` (庫存:${calcStock(e.id, 'equip').stock})` : '') }));
   } else if (isPower) {
     let items = scope === 'out' ? (C.powers || []).filter(p => calcStock(p.id, 'power').stock > 0) : (C.powers || []);
-    items = [...items].sort((a, b) => getItemFullName(a, 'power').localeCompare(getItemFullName(b, 'power')));
-    itemList = items.map(p => {
-      const st = scope === 'out'
+    list = [...items].sort((a, b) => getItemFullName(a, 'power').localeCompare(getItemFullName(b, 'power')))
+      .map(p => ({ value: p.id, label: getItemFullName(p, 'power') + (scope === 'out' ? ` (庫存:${calcStock(p.id, 'power').stock})` : '') }));
+  }
+
+  if (typeof buildSelOptions === 'function') buildSelOptions(scope + '-item', list);
+  const trigger = document.getElementById(scope + '-item-trigger');
+  if (trigger) trigger.textContent = '— 請選擇 —';
+  const itemInput = document.getElementById(scope + '-item');
+  if (itemInput) itemInput.value = '';
+  const unitInput = document.getElementById(scope + '-unit');
+  if (unitInput) unitInput.value = '';
+
+  const psel = document.getElementById(scope + '-person');
+  if (psel) {
+    psel.innerHTML = '<option value="">— 請選擇 —</option>' + (C.persons || []).map(p => `<option value="${p.name}">${p.name}${p.dept ? ' / ' + p.dept : ''}</option>`).join('');
+  }
+}
+
+function onItemChange(scope) {
+  const id = document.getElementById(scope + '-item')?.value || '';
+  const unitInput = document.getElementById(scope + '-unit');
+  if (!id) { if (unitInput) unitInput.value = ''; return; }
+  const info = getItemInfo(id, MT[scope]);
+  if (unitInput) unitInput.value = info ? info.unit : '';
+  if (scope === 'out' && typeof checkOutQty === 'function') checkOutQty();
+}
+
+async function loadAll() {
+  showLoad(true);
+  try {
+    const [wires, equips, equipCats, powers, powerCats, persons, purposes, locations, brands, inbound, outbound] = await Promise.all([
+      dbGet('wire_items', '?deleted_at=is.null&order=id'),
+      dbGet('equip_items', '?deleted_at=is.null&order=id'),
+      dbGet('equip_categories', '?deleted_at=is.null&order=sort_order'),
+      dbGet('power_items', '?deleted_at=is.null&order=id'),
+      dbGet('power_categories', '?deleted_at=is.null&order=sort_order'),
+      dbGet('persons', '?deleted_at=is.null&order=name'),
+      dbGet('purposes', '?deleted_at=is.null&order=name'),
+      dbGet('locations', '?deleted_at=is.null&order=sort_order'),
+      dbGet('brands', '?deleted_at=is.null&order=sort_order'),
+      dbGet('inbound', '?deleted_at=is.null&order=time.desc'),
+      dbGet('outbound', '?deleted_at=is.null&order=time.desc'),
+    ]);
+    C = { wires, equips, equipCats, powers, powerCats, persons, purposes, locations, brands, inbound, outbound };
+  } catch (e) {
+    showToast('連線失敗：' + e.message, 'err');
+  }
+  showLoad(false);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const inTbl = document.querySelector('th[data-tbl="inbound"]')?.closest('table');
+  if (inTbl && typeof setupSort === 'function') setupSort(inTbl, 'inbound', renderInbound);
+  const outTbl = document.querySelector('th[data-tbl="outbound"]')?.closest('table');
+  if (outTbl && typeof setupSort === 'function') setupSort(outTbl, 'outbound', renderOutbound);
+  const invTbl = document.querySelector('th[data-tbl="inventory"]')?.closest('table');
+  if (invTbl && typeof setupSort === 'function') setupSort(invTbl, 'inv', renderInventory);
+
+  const mainEl = document.querySelector('.main');
+  if (mainEl) {
+    mainEl.addEventListener('scroll', function() {
+      const btn = document.getElementById('scroll-top-btn');
+      if (btn) btn.classList.toggle('visible', this.scrollTop > 200);
+    });
+  }
+
+  const wireFields = ['wire-core', 'wire-conn-a', 'wire-apc-a', 'wire-conn-b', 'wire-apc-b', 'wire-length'];
+  wireFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && typeof updateWirePreview === 'function') el.addEventListener('change', updateWirePreview);
+  });
+  const wlc = document.getElementById('wire-length-custom');
+  if (wlc && typeof updateWirePreview === 'function') wlc.addEventListener('input', updateWirePreview);
+  const wl = document.getElementById('wire-length');
+  if (wl) {
+    wl.addEventListener('change', function() {
+      const customEl = document.getElementById('wire-length-custom');
+      if (customEl) customEl.style.display = this.value === '__custom__' ? '' : 'none';
+      if (typeof updateWirePreview === 'function') updateWirePreview();
+    });
+  }
+
+  const eu = document.getElementById('equip-unit');
+  if (eu) {
+    eu.addEventListener('change', function() {
+      const customEl = document.getElementById('equip-unit-custom');
+      if (customEl) customEl.style.display = this.value === '__custom__' ? '' : 'none';
+    });
+  }
+  const pu = document.getElementById('power-unit');
+  if (pu) {
+    pu.addEventListener('change', function() {
+      const customEl = document.getElementById('power-unit-custom');
+      if (customEl) customEl.style.display = this.value === '__custom__' ? '' : 'none';
+    });
+  }
+
+  loadAll().then(() => {
+    if (typeof updateInvItemSelect === 'function') updateInvItemSelect();
+    if (typeof renderInventory === 'function') renderInventory();
+  });
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const open = [...document.querySelectorAll('.overlay.open')];
+    if (open.length) closeModal(open[open.length - 1].id);
+  }
+  if (e.key === 'Enter' && !e.shiftKey) {
+    const open = [...document.querySelectorAll('.overlay.open')];
+    if (!open.length) return;
+    const active = open[open.length - 1];
+    if (document.activeElement?.tagName === 'TEXTAREA' || document.activeElement?.closest('.sel-search-box')) return;
+    const map = {
+      'modal-wire': typeof submitWire === 'function' ? submitWire : null,
+      'modal-equip': typeof submitEquip === 'function' ? submitEquip : null,
+      'modal-power': typeof submitPower === 'function' ? submitPower : null,
+      'modal-person': typeof submitPerson === 'function' ? submitPerson : null,
+      'modal-purpose': typeof submitPurpose === 'function' ? submitPurpose : null,
+      'modal-location': typeof submitLocation === 'function' ? submitLocation : null,
+      'modal-brand': typeof submitBrand === 'function' ? submitBrand : null,
+      'modal-inbound': typeof submitInbound === 'function' ? submitInbound : null,
+      'modal-outbound': typeof submitOutbound === 'function' ? submitOutbound : null
+    };
+    const fn = map[active.id];
+    if (fn) {
+      e.preventDefault();
+      fn();
+    }
+  }
+});
