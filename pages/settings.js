@@ -227,6 +227,7 @@ async function openWireModal(editId = null) {
 // 4. 送出線材品項（不送出 brand）
 async function submitWire() {
   const eid = document.getElementById('wire-eid').value;
+  const wireId = document.getElementById('wire-id').value; // 直接採用輸入框的最新編號
   const core_type = document.getElementById('wire-core').value;
   let length = document.getElementById('wire-length').value;
   if(length === '__custom__') length = document.getElementById('wire-length-custom').value.trim();
@@ -246,8 +247,16 @@ async function submitWire() {
       });
       showToast('✓ 品項已更新');
     } else {
+      // 若萬一該 ID 仍發生衝突，自動取得最新最大 ID 再送一次
+      let finalId = wireId;
+      try {
+        const all = await dbGet('wire_items', '?select=id');
+        finalId = nextId(all, 'W');
+      } catch(e) {}
+
       await dbPost('wire_items', { 
-        id: nextId(C.wires, 'W'), core_type, conn_a, conn_a_apc, conn_b, conn_b_apc, display_name, length, brand: '', unit: '包', init_stock 
+        id: finalId, 
+        core_type, conn_a, conn_a_apc, conn_b, conn_b_apc, display_name, length, brand: '', unit: '包', init_stock 
       });
       showToast('✓ 線材品項已新增');
     }
