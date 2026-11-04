@@ -13,8 +13,8 @@ function renderInbound() {
   const labelMap = { wire: '線材', equip: '設備', power: '電力' };
 
   tb.innerHTML = pagedRows(rows, 'inbound').map(r => {
-    // 計算進料完成當下的結存庫存
-    const curStock = calcStockAtTime(r.item_id, r.item_type, r.time, r.id);
+    // 改回抓該品項當前即時庫存
+    const curStock = calcStock(r.item_id, r.item_type).stock;
     return `<tr>
       <td class="mono">${r.id}</td>
       <td class="mono">${fmtTime(r.time)}</td>
