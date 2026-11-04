@@ -1,180 +1,104 @@
-// === 頁面切換控制 ===
+// ==================== APP 主程式與事件控制 ====================
+
+// 頁面導航切換
 function goPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
+  const targetPage = document.getElementById('page-' + name);
+  if (targetPage) targetPage.classList.add('active');
+  
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  ['inventory','inbound','outbound','dashboard','settings'].forEach((n, i) => {
-    if(n === name) document.querySelectorAll('.nav-tab')[i].classList.add('active');
+  ['inventory', 'inbound', 'outbound', 'dashboard', 'settings'].forEach((n, i) => {
+    const tabs = document.querySelectorAll('.nav-tab');
+    if (n === name && tabs[i]) tabs[i].classList.add('active');
   });
 
-  if(name === 'inventory') {
+  if (name === 'inventory') {
     if (typeof updateInvItemSelect === 'function') updateInvItemSelect();
-    renderInventory();
+    if (typeof renderInventory === 'function') renderInventory();
+  } else if (name === 'inbound') {
+    if (typeof renderInbound === 'function') renderInbound();
+  } else if (name === 'outbound') {
+    if (typeof renderOutbound === 'function') renderOutbound();
+  } else if (name === 'dashboard') {
+    if (typeof populateDashFilters === 'function') populateDashFilters();
+    if (typeof renderDashboard === 'function') renderDashboard();
+  } else if (name === 'settings') {
+    if (typeof renderSettings === 'function') renderSettings();
   }
-  else if(name === 'inbound') renderInbound();
-  else if(name === 'outbound') renderOutbound();
-  else if(name === 'dashboard') { populateDashFilters(); renderDashboard(); }
-  else if(name === 'settings') renderSettings();
 }
+
+// 系統設定頁籤切換
 function switchSettingTab(tab) {
   const tabs = ['wire', 'equip', 'power', 'persons', 'purposes', 'locations', 'brands'];
   tabs.forEach(t => {
-    const el = document.getElementById('stab-' + t); if(el) el.style.display = t === tab ? '' : 'none';
+    const el = document.getElementById('stab-' + t);
+    if (el) el.style.display = (t === tab ? '' : 'none');
   });
   document.querySelectorAll('.page-tab').forEach((el, i) => {
     el.classList.toggle('active', tabs[i] === tab);
   });
 }
-// === 分類按鈕切換控制 ===
+
+// 分類過濾按鈕切換
 function setFilter(scope, val, el) {
   F[scope] = val;
   const pgKey = { inv: 'inv', in: 'inbound', out: 'outbound' }[scope];
   if (pgKey) PG[pgKey] = 1;
 
-  // 取得所屬的 toggle-group 並切換 active 樣式
   const group = el.closest('.toggle-group');
   if (group) {
     group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
   }
   el.classList.add('active');
 
-  // 若切換庫存篩選，連動更新品項選單
   if (scope === 'inv') {
     const itemSel = document.getElementById('inv-item-filter');
-    if (itemSel) itemSel.value = ''; // 切換大類時重設品項值
-    if (typeof updateInvItemSelect === 'function') {
-      updateInvItemSelect();
-    }
-    renderInventory();
+    if (itemSel) itemSel.value = '';
+    if (typeof updateInvItemSelect === 'function') updateInvItemSelect();
+    if (typeof renderInventory === 'function') renderInventory();
   } else if (scope === 'in') {
-    renderInbound();
+    if (typeof renderInbound === 'function') renderInbound();
   } else {
-    renderOutbound();
+    if (typeof renderOutbound === 'function') renderOutbound();
   }
 }
-  
-  // 加上被點擊按鈕的 active
-  el.classList.add('active');
 
-  // 重新渲染對應頁面
-  if (scope === 'inv') renderInventory();
-  else if (scope === 'in') renderInbound();
-  else if (scope === 'out') renderOutbound();
+// 彈窗控制
+function closeModal(id) {
+  const m = document.getElementById(id);
+  if (m) m.classList.remove('open');
 }
 
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 function _openModal(id) {
-  document.getElementById(id).classList.add('open');
+  const m = document.getElementById(id);
+  if (!m) return;
+  m.classList.add('open');
   setTimeout(() => {
-    const m = document.getElementById(id); const first = m.querySelector('input:not([readonly]):not([type=hidden]),select,textarea');
-    if(first) first.focus();
+    const first = m.querySelector('input:not([readonly]):not([type=hidden]),select,textarea');
+    if (first) first.focus();
   }, 80);
 }
 
+// 進領料彈窗：切換線材 / 設備 / 電力
 function setModalType(scope, type) {
   MT[scope] = type;
   const isWire = type === 'wire';
   const isEquip = type === 'equip';
   const isPower = type === 'power';
 
-  document.getElementById(scope+'-twire').className = 'btn btn-sm ' + (isWire ? 'btn-primary' : 'btn-ghost');
-  document.getElementById(scope+'-tequip').className = 'btn btn-sm ' + (isEquip ? 'btn-purple' : 'btn-ghost');
-  document.getElementById(scope+'-tpower').className = 'btn btn-sm ' + (isPower ? 'btn-warn' : 'btn-ghost');
+  const btnW = document.getElementById(scope + '-twire');
+  const btnE = document.getElementById(scope + '-tequip');
+  const btnP = document.getElementById(scope + '-tpower');
+  if (btnW) btnW.className = 'btn btn-sm ' + (isWire ? 'btn-primary' : 'btn-ghost');
+  if (btnE) btnE.className = 'btn btn-sm ' + (isEquip ? 'btn-purple' : 'btn-ghost');
+  if (btnP) btnP.className = 'btn btn-sm ' + (isPower ? 'btn-warn' : 'btn-ghost');
 
-  document.getElementById(scope+'-item-lbl').textContent = isWire ? '線材規格 *' : (isPower ? '電力設備規格 *' : '設備品項 *');
+  const lbl = document.getElementById(scope + '-item-lbl');
+  if (lbl) {
+    lbl.textContent = isWire ? '線材規格 *' : (isPower ? '電力設備規格 *' : '設備品項 *');
+  }
 
   let itemList = [];
-  if(isWire) {
-    let items = scope === 'out' ? C.wires.filter(w => calcStock(w.id, 'wire').stock > 0) : C.wires;
-    items = [...items].sort((a,b) => getItemFullName(a, 'wire').localeCompare(getItemFullName(b, 'wire')));
-    itemList = items.map(w => { const st = scope === 'out' ? ` (庫存:${calcStock(w.id, 'wire').stock})` : ''; return { value: w.id, label: getItemFullName(w, 'wire') + st }; });
-  } else if(isEquip) {
-    let items = scope === 'out' ? C.equips.filter(e => calcStock(e.id, 'equip').stock > 0) : C.equips;
-    items = [...items].sort((a,b) => getItemFullName(a, 'equip').localeCompare(getItemFullName(b, 'equip')));
-    itemList = items.map(e => { const st = scope === 'out' ? ` (庫存:${calcStock(e.id, 'equip').stock})` : ''; return { value: e.id, label: getItemFullName(e, 'equip') + st }; });
-  } else if(isPower) {
-    let items = scope === 'out' ? C.powers.filter(p => calcStock(p.id, 'power').stock > 0) : C.powers;
-    items = [...items].sort((a,b) => getItemFullName(a, 'power').localeCompare(getItemFullName(b, 'power')));
-    itemList = items.map(p => { const st = scope === 'out' ? ` (庫存:${calcStock(p.id, 'power').stock})` : ''; return { value: p.id, label: getItemFullName(p, 'power') + st }; });
-  }
-
-  buildSelOptions(scope+'-item', itemList);
-  document.getElementById(scope+'-item-trigger').textContent = '— 請選擇 —';
-  document.getElementById(scope+'-item').value = '';
-  document.getElementById(scope+'-unit').value = '';
-  const psel = document.getElementById(scope+'-person');
-  psel.innerHTML = '<option value="">— 請選擇 —</option>' + C.persons.map(p => `<option value="${p.name}">${p.name}${p.dept ? ' / '+p.dept : ''}</option>`).join('');
-}
-function onItemChange(scope) {
-  const id = document.getElementById(scope+'-item').value; if(!id) { document.getElementById(scope+'-unit').value = ''; return; }
-  const info = getItemInfo(id, MT[scope]); document.getElementById(scope+'-unit').value = info ? info.unit : '';
-  if(scope === 'out') checkOutQty();
-}
-
-async function loadAll() {
-  showLoad(true);
-  try {
-    const [wires, equips, equipCats, powers, powerCats, persons, purposes, locations, brands, inbound, outbound] = await Promise.all([
-      dbGet('wire_items', '?deleted_at=is.null&order=id'),
-      dbGet('equip_items', '?deleted_at=is.null&order=id'),
-      dbGet('equip_categories', '?deleted_at=is.null&order=sort_order'),
-      dbGet('power_items', '?deleted_at=is.null&order=id'),
-      dbGet('power_categories', '?deleted_at=is.null&order=sort_order'),
-      dbGet('persons', '?deleted_at=is.null&order=name'),
-      dbGet('purposes', '?deleted_at=is.null&order=name'),
-      dbGet('locations', '?deleted_at=is.null&order=sort_order'),
-      dbGet('brands', '?deleted_at=is.null&order=sort_order'),
-      dbGet('inbound', '?deleted_at=is.null&order=id.desc'),
-      dbGet('outbound', '?deleted_at=is.null&order=id.desc'),
-    ]);
-    C = { wires, equips, equipCats, powers, powerCats, persons, purposes, locations, brands, inbound, outbound };
-  } catch(e) { showToast('連線失敗：'+e.message, 'err'); }
-  showLoad(false);
-}
-
-// 綁定全域監聽事件
-document.addEventListener('DOMContentLoaded', () => {
-  //總表表頭排序
-  const invTbl = document.querySelector('th[data-tbl="inventory"]')?.closest('table');
-  if (invTbl) setupSort(invTbl, 'inv', renderInventory);
-  
-  // 設定表格排序
-  const inTbl = document.querySelector('th[data-tbl="inbound"]')?.closest('table'); if(inTbl) setupSort(inTbl, 'inbound', renderInbound);
-  const outTbl = document.querySelector('th[data-tbl="outbound"]')?.closest('table'); if(outTbl) setupSort(outTbl, 'outbound', renderOutbound);
-  
-  // 回頂部按鈕
-  const mainEl = document.querySelector('.main');
-  if(mainEl) mainEl.addEventListener('scroll', function() {
-    const btn = document.getElementById('scroll-top-btn'); if(btn) btn.classList.toggle('visible', this.scrollTop > 200);
-  });
-  
-  // 綁定系統設定中的預覽事件
-  const wireFields = ['wire-conn-a','wire-apc-a','wire-conn-b','wire-apc-b','wire-length','wire-brand'];
-  wireFields.forEach(id => { const el = document.getElementById(id); if(el) el.addEventListener('change', updateWirePreview); });
-  ['wire-apc-a','wire-apc-b'].forEach(id => { const el = document.getElementById(id); if(el) el.addEventListener('change', updateWirePreview); });
-  const wlc = document.getElementById('wire-length-custom'); if(wlc) wlc.addEventListener('input', updateWirePreview);
-  const wl = document.getElementById('wire-length');
-  if(wl) wl.addEventListener('change', function() {
-    document.getElementById('wire-length-custom').style.display = this.value === '__custom__' ? '' : 'none'; updateWirePreview();
-  });
-  const eu = document.getElementById('equip-unit');
-  if(eu) eu.addEventListener('change', function() {
-    document.getElementById('equip-unit-custom').style.display = this.value === '__custom__' ? '' : 'none';
-  });
-
-  // 初始載入
-  loadAll().then(() => renderInventory());
-});
-
-document.addEventListener('keydown', e => {
-  if(e.key === 'Escape') {
-    const open = [...document.querySelectorAll('.overlay.open')]; if(open.length) closeModal(open[open.length-1].id);
-  }
-  if(e.key === 'Enter' && !e.shiftKey) {
-    const open = [...document.querySelectorAll('.overlay.open')]; if(!open.length) return;
-    const active = open[open.length-1];
-    if(document.activeElement?.tagName === 'TEXTAREA' || document.activeElement?.closest('.sel-search-box')) return;
-    const map = { 'modal-wire': submitWire, 'modal-equip': submitEquip, 'modal-person': submitPerson, 'modal-purpose': submitPurpose, 'modal-location': submitLocation, 'modal-brand': submitBrand, 'modal-inbound': submitInbound, 'modal-outbound': submitOutbound };
-    const fn = map[active.id]; if(fn) { e.preventDefault(); fn(); }
-  }
-});
+  if (isWire) {
+    let items = scope === 'out' ? (C.wires || []).filter(w => calcStock(w.id, 'wire').stock > 0) : (C.wires || []);
+    items = [...items].sort((a, b) => getItemFullName(a, 'wire').localeCompare(getItemFullName(b,
